@@ -1,19 +1,21 @@
-# 5G MiFi Dashboard(UDX710)
+# UDX710-UOOLS: Geek Evolution Edition 5G MiFi Dashboard
+
+> **Not just another MiFi panel. This is the core control system built for geeks.**
 
 [🇨🇳 中文文档](README_CN.md)
 
-A web-based management interface for 5G MiFi devices running on embedded Linux systems (aarch64).
+A deeply refactored management interface for 5G MiFi devices (UNISOC UDX710), running on embedded Linux (aarch64). This project represents a 360-degree logic lockdown and functional evolution of existing open-source MiFi tools.
 
-> ⭐ **If you find this project useful, please give it a star!** It took a week of hard work to build this backend. Your support means a lot!
+> ⭐ **Geek Exclusive**: Ultra-low memory footprint (~1MB), featuring an automation self-healing engine and full-stack achievement system.
 
-## 📦 Versions
+## 📦 Identity & Versions
 
-This project provides two versions for different devices:
+Code-named **UOOLS (Universal Optimization Operating Layer System)**, this project aims for industrial-grade stability and delivery standards on UDX710 hardware.
 
-| Version | Target Device | Git Branch | Features | Description |
+| Version | Identity | Git Branch | Status | Description |
 |:---:|:---:|:---:|:---:|:---|
-| **UDX710 Generic** | UNISOC UDX710 Platform | `main` | ⭐ Basic Features | For most UDX710 devices |
-| **SZ50 Dedicated** | SZ50 MiFi Device | `SZ50` | 🌟 Full Features | Extra: LED Control, Key Listener, WiFi Control, Factory Reset, Client Management |
+| **UDX710 Geek** | Core/Independent Evolution | `main` | ✅ Audited | Includes all Geek features (Achievements/Topology/Automation) |
+| **SZ50 Compatible** | Hardware-Specific | `SZ50` | 🌟 Full Support | IO-level optimizations for SZ50 specific hardware |
 
 > 💡 **Switch Version**: `git checkout SZ50` for SZ50 version, `git checkout main` for generic version
 
@@ -261,17 +263,18 @@ This project is licensed under **GPLv3** (strong Copyleft):
 
 See [LICENSE](LICENSE)
 
-## 🙏 Acknowledgments
+## 🙏 Acknowledgments & Origins
 
-Special thanks to the following contributors:
+This project is an independent exploration of the MiFi management ecosystem by the **LeoChen** team. We have drawn inspiration from excellent community projects and performed a complete modern overhaul:
 
-| Contributor | Contribution |
-|:---:|:---|
-| **等不住** | AT Commands |
-| **黑衣剑士** | USB Mode Switch |
-| **Voodoo** | Glib Build Environment |
-| **1orz** | [project-cpe](https://github.com/1orz/project-cpe) Open Source Project |
-| **LeoChen** | Project Author |
+| Project/Individual | Contribution | Relationship |
+|:---:|:---|:---|
+| **1orz/project-cpe** | [Original Prototype](https://github.com/1orz/project-cpe) | **Parent Project**. We maintain compliance with GPLv3 while refactoring ~70% of the architecture and fixing security vulnerabilities. |
+| **等不住** | Core AT Command Dictionary | Key Technical Support |
+| **黑衣剑士** | USB Mode Hot-Switching Logic | Core Algorithm Support |
+| **Voodoo** | Glib Cross-Compile Toolchain | Build Infrastructure |
+
+**Our Commitment**: We will continue an independent "Geek-Oriented" evolution path distinct from `project-cpe`, focusing on system self-healing, memory safety, and visualization dashboards.
 
 Thanks to all community members for your support and feedback!
 
