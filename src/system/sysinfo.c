@@ -29,6 +29,7 @@ static void parse_meminfo(SystemInfo *info) {
     char buf[4096];
     if (read_file("/proc/meminfo", buf, sizeof(buf)) != 0) return;
 
+    unsigned long buffers = 0;
     char *line = strtok(buf, "\n");
     while (line) {
         unsigned long val;
@@ -38,8 +39,17 @@ static void parse_meminfo(SystemInfo *info) {
             info->free_ram = val / 1024;
         } else if (sscanf(line, "Cached: %lu kB", &val) == 1) {
             info->cached_ram = val / 1024;
+        } else if (sscanf(line, "Buffers: %lu kB", &val) == 1) {
+            buffers = val / 1024;
         }
         line = strtok(NULL, "\n");
+    }
+
+    if (info->total_ram > 0) {
+        /* 计算已用内存 (Total - Free - Cached - Buffers) */
+        unsigned long used = info->total_ram - info->free_ram - info->cached_ram - buffers;
+        info->ram_percent = (double)used / info->total_ram * 100.0;
+        if (info->ram_percent < 0) info->ram_percent = 0;
     }
 }
 
@@ -139,7 +149,29 @@ extern int get_imsi(char *imsi, size_t size);
 extern const char *get_carrier_from_imsi(const char *imsi);
 extern int get_airplane_mode(void);
 
+#include <sys/time.h>
+
+/* 缓存机制 */
+static SystemInfo g_cached_info;
+static long long g_last_update_ms = 0;
+#define CACHE_TTL_MS 1500
+
+/* 获取当前毫秒时间戳 */
+static long long get_current_ms(void) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (long long)tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
 int get_system_info(SystemInfo *info) {
+    long long now = get_current_ms();
+    
+    /* 如果缓存未过期，直接返回 */
+    if (g_last_update_ms > 0 && (now - g_last_update_ms) < CACHE_TTL_MS) {
+        memcpy(info, &g_cached_info, sizeof(SystemInfo));
+        return 0;
+    }
+
     struct utsname uts;
     char buf[256];
 
@@ -255,6 +287,10 @@ int get_system_info(SystemInfo *info) {
     /* CPU 使用率 */
     info->cpu_usage = get_cpu_usage();
 
+    /* 更新缓存 */
+    memcpy(&g_cached_info, info, sizeof(SystemInfo));
+    g_last_update_ms = now;
+
     return 0;
 }
 
@@ -304,53 +340,17 @@ int get_qos_info(int *qci, int *downlink, int *uplink) {
 
 /* 获取网络类型和频段 */
 int get_network_type_and_band(char *net_type, size_t type_size, char *band, size_t band_size) {
-    char output[2048];
-    
-    strcpy(net_type, "N/A");
-    strcpy(band, "N/A");
-
-    /* 使用 dbus-send 获取网络信息 */
-    if (run_command(output, sizeof(output), "dbus-send", "--system", "--dest=org.ofono", 
-                    "--print-reply", "/ril_0", "org.ofono.NetworkMonitor.GetServingCellInformation", NULL) != 0) {
-        return -1;
-    }
-
-    /* 判断网络类型 */
-    if (strstr(output, "\"nr\"")) {
-        strncpy(net_type, "5G NR", type_size - 1);
-    } else if (strstr(output, "\"lte\"")) {
-        strncpy(net_type, "4G LTE", type_size - 1);
-    }
-
-    /* 解析频段 - 查找 "Band" 字段 */
-    char *band_line = strstr(output, "\"Band\"");
-    if (band_line) {
-        /* 查找下一行的 variant 值 */
-        char *next_line = strchr(band_line, '\n');
-        if (next_line) {
-            next_line++;
-            if (strstr(next_line, "variant")) {
-                /* 提取数字 */
-                char *p = next_line;
-                while (*p) {
-                    if (*p >= '0' && *p <= '9') {
-                        int val = atoi(p);
-                        if (val > 0) {
-                            if (strcmp(net_type, "5G NR") == 0) {
-                                snprintf(band, band_size, "N%d", val);
-                            } else {
-                                snprintf(band, band_size, "B%d", val);
-                            }
-                            break;
-                        }
-                    }
-                    p++;
-                }
-            }
+    if (ofono_get_network_info(net_type, type_size, band, band_size) == 0) {
+        /* 如果 band 是数字，根据技术类型补全前缀 B/N */
+        if (band[0] >= '0' && band[0] <= '9') {
+            char tmp[16];
+            if (strstr(net_type, "5G")) snprintf(tmp, sizeof(tmp), "N%s", band);
+            else snprintf(tmp, sizeof(tmp), "B%s", band);
+            strncpy(band, tmp, band_size - 1);
         }
+        return 0;
     }
-
-    return 0;
+    return -1;
 }
 
 /* 获取 CPU 使用率 - 通过读取 /proc/stat 计算 */
@@ -440,4 +440,28 @@ double get_cpu_usage(void) {
     if (usage > 100) usage = 100;
     
     return usage;
+}
+
+void system_optimize_memory(void) {
+    printf("[MEM] 正在应用系统级别内存优化...\n");
+
+    /* 1. VM 调优 */
+    system("echo 200 > /proc/sys/vm/vfs_cache_pressure");
+    system("echo 10 > /proc/sys/vm/swappiness");
+    system("echo 10 > /proc/sys/vm/dirty_ratio");
+    system("echo 20 > /proc/sys/vm/dirty_background_ratio");
+
+    /* 2. OOM 评分保护 (保护当前进程) */
+    char oom_path[64];
+    snprintf(oom_path, sizeof(oom_path), "/proc/%d/oom_score_adj", getpid());
+    FILE *f = fopen(oom_path, "w");
+    if (f) {
+        fprintf(f, "-500\n"); /* 较低的分数意味着更不容易被杀死 (-1000 到 1000) */
+        fclose(f);
+        printf("[MEM] 已设置 OOM 保护优先级: -500\n");
+    }
+
+    /* 3. 初始强制回收一次 */
+    system("echo 3 > /proc/sys/vm/drop_caches");
+    printf("[MEM] 系统内存优化应用完成\n");
 }

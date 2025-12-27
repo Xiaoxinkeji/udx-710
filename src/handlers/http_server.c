@@ -21,6 +21,8 @@
 #include "usb_mode.h"
 #include "http_utils.h"
 #include "auth.h"
+#include "achievement.h"
+#include "automation.h"
 
 /* 嵌入式文件系统声明 (packed_fs.c) */
 extern int serve_packed_file(struct mg_connection *c, struct mg_http_message *hm);
@@ -89,6 +91,12 @@ static void http_handler(struct mg_connection *c, int ev, void *ev_data) {
             }
         }
 
+        /* WebSocket 升级处理 */
+        if (mg_match(hm->uri, mg_str("/api/ws/log"), NULL)) {
+            mg_ws_upgrade(c, hm, NULL);
+            return;
+        }
+
         /* 认证 API - 优先处理，无需Token验证 */
         if (mg_match(hm->uri, mg_str("/api/auth/login"), NULL)) {
             handle_auth_login(c, hm);
@@ -139,6 +147,21 @@ static void http_handler(struct mg_connection *c, int ev, void *ev_data) {
         }
         else if (mg_match(hm->uri, mg_str("/api/current_band"), NULL)) {
             handle_get_current_band(c, hm);
+        }
+        else if (mg_match(hm->uri, mg_str("/api/achievements"), NULL)) {
+            handle_get_achievements(c, hm);
+        }
+        else if (mg_match(hm->uri, mg_str("/api/network/neighbors"), NULL)) {
+            handle_neighbor_cells(c, hm);
+        }
+        else if (mg_match(hm->uri, mg_str("/api/automation/rules"), NULL)) {
+            handle_get_automation_rules(c, hm);
+        }
+        else if (mg_match(hm->uri, mg_str("/api/automation/save"), NULL)) {
+            handle_save_automation_rule(c, hm);
+        }
+        else if (mg_match(hm->uri, mg_str("/api/automation/delete"), NULL)) {
+            handle_delete_automation_rule(c, hm);
         }
         /* 高级网络 API */
         else if (mg_match(hm->uri, mg_str("/api/bands"), NULL)) {
@@ -357,6 +380,9 @@ int http_server_start(const char *port) {
         printf("警告: 认证模块初始化失败\n");
     }
 
+    /* 初始化成就系统 */
+    achievement_init();
+
     /* 初始化 mongoose */
     mg_mgr_init(&g_mgr);
 
@@ -405,6 +431,30 @@ void http_server_run(void) {
         if (++maintenance_counter >= 3000) {  /* 3000 * 10ms = 30秒 */
             maintenance_counter = 0;
             sms_maintenance();
+        }
+
+        /* 每分钟检查一次成就状态 */
+        static int ach_counter = 0;
+        if (++ach_counter >= 6000) { /* 6000 * 10ms = 60秒 */
+            ach_counter = 0;
+            achievement_check_system();
+        }
+
+        /* 每10秒检查一次自动化规则 */
+        static int auto_counter = 0;
+        if (++auto_counter >= 1000) { /* 1000 * 10ms = 10秒 */
+            auto_counter = 0;
+            automation_check_cycle();
+        }
+    }
+}
+
+void geek_logger_broadcast(const char *msg) {
+    if (!msg) return;
+    struct mg_connection *c;
+    for (c = g_mgr.conns; c != NULL; c = c->next) {
+        if (c->is_websocket) {
+            mg_ws_send(c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
         }
     }
 }

@@ -103,6 +103,12 @@ Lightweight, efficient, and perfect for resource-constrained embedded devices!
 - **Dark Mode**: Full dark/light theme support
 - **Responsive Design**: Mobile and desktop optimized
 - **Real-time Updates**: Live data refresh
+- **Geek Advanced Features**:
+  - 🏆 **Full-stack Achievement System**: Time-based auditing (C) with glassmorphism UI (Vue).
+  - 📡 **Cellular Topology**: SVG radar map visualizing real-time neighbor cell signals.
+  - 🤖 **Automation Engine**: Lightweight IF-THEN rules for self-healing & mem-reclaim.
+  - 💻 **Geek Logger**: WebSocket-based sub-second real-time system audit terminal.
+  - 🛡️ **Memory Guardian**: Kernel-level VM tuning & OOM protection for low-RAM devices.
 - **Chinese Interface**: Native Chinese language support
 
 ### Security Features
@@ -206,6 +212,11 @@ The backend uses cross-compilation targeting aarch64-linux-gnu. Ensure your tool
 | `/api/update/install` | POST | Install update |
 | `/api/factory-reset` | POST | Factory reset |
 | `/api/reboot` | POST | Reboot device |
+| `/api/achievements` | GET | Get achievement progress |
+| `/api/automation/rules` | GET | Get automation rules |
+| `/api/automation/save` | POST | Save/Update rule |
+| `/api/automation/delete` | POST | Delete rule |
+| `/api/ws/log` | WS | Geek Logger real-time stream |
 
 ## Dependencies
 
@@ -227,7 +238,7 @@ Built-in lightweight Web Server for browser-based control interface.
 
 | Version | Default Access |
 |:---:|:---|
-| UDX710 Generic | `http://DEVICE_IP:6677` |
+| UDX710 Generic | `http://DEVICE_IP:9898` |
 | SZ50 Dedicated | `http://DEVICE_IP:80` |
 
 ```bash

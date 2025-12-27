@@ -242,6 +242,14 @@ this.$data.count++
 this.$refresh()
 ```
 
+### New Geek APIs (v2.1)
+
+Access advanced system features from your plugins:
+
+- **`this.$api.getAchievements()`**: Returns current progress of all missions.
+- **`this.$api.getAutomationRules()`**: Returns active automation engine rules.
+- **`this.$api.getNeighborCells()`**: Returns raw signal data for topology mapping.
+
 ---
 
 ## 脚本管理

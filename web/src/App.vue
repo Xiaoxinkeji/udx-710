@@ -14,6 +14,10 @@ import WebTerminal from './components/WebTerminal.vue'
 import UsbMode from './components/UsbMode.vue'
 import ApnConfig from './components/ApnConfig.vue'
 import PluginStore from './components/PluginStore.vue'
+import AchievementCard from './components/AchievementCard.vue'
+import CellTopology from './components/CellTopology.vue'
+import AutomationManager from './components/AutomationManager.vue'
+import GeekLogger from './components/GeekLogger.vue'
 import GlobalToast from './components/GlobalToast.vue'
 import GlobalConfirm from './components/GlobalConfirm.vue'
 import { isLoggedIn, authGetStatus, clearAuthToken, authLogin } from './composables/useApi'
@@ -238,6 +242,10 @@ const menuItems = [
   { id: 'at', labelKey: 'menu.at', icon: 'fa-terminal', color: 'from-cyan-500 to-teal-400' },
   { id: 'terminal', labelKey: 'menu.terminal', icon: 'fa-desktop', color: 'from-slate-500 to-gray-400' },
   { id: 'usb', labelKey: 'menu.usb', icon: ['fab', 'usb'], color: 'from-purple-500 to-pink-400' },
+  { id: 'achievements', labelKey: 'menu.achievements', icon: 'fa-medal', color: 'from-yellow-400 to-orange-500' },
+  { id: 'topology', labelKey: 'menu.topology', icon: 'fa-project-diagram', color: 'from-indigo-500 to-blue-400' },
+  { id: 'automation', labelKey: 'menu.automation', icon: 'fa-robot', color: 'from-blue-600 to-indigo-500' },
+  { id: 'logger', labelKey: 'menu.logger', icon: 'fa-terminal', color: 'from-slate-700 to-slate-900' },
   { id: 'plugins', labelKey: 'menu.plugins', icon: 'fa-puzzle-piece', color: 'from-violet-500 to-purple-400' },
   { id: 'settings', labelKey: 'menu.settings', icon: 'fa-sliders-h', color: 'from-orange-500 to-amber-400' }
 ]
@@ -275,7 +283,8 @@ let refreshInterval = null
 
 function startRefreshInterval() {
   if (refreshInterval) return
-  refreshInterval = setInterval(fetchSystemInfo, 30000)
+  // 将轮询间隔调整为更合理的 5 秒，配合后端 1.5 秒缓存
+  refreshInterval = setInterval(fetchSystemInfo, 5000)
 }
 
 function stopRefreshInterval() {
@@ -604,6 +613,10 @@ onUnmounted(() => {
           <UsbMode v-else-if="activeMenu === 'usb'" key="usb" />
           <ApnConfig v-else-if="activeMenu === 'apn'" key="apn" />
           <PluginStore v-else-if="activeMenu === 'plugins'" key="plugins" />
+          <AchievementCard v-else-if="activeMenu === 'achievements'" key="achievements" />
+          <CellTopology v-else-if="activeMenu === 'topology'" key="topology" />
+          <AutomationManager v-else-if="activeMenu === 'automation'" key="automation" />
+          <GeekLogger v-else-if="activeMenu === 'logger'" key="logger" />
           <SystemSettings v-else-if="activeMenu === 'settings'" key="settings" />
         </Transition>
       </div>

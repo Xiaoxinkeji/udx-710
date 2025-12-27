@@ -1,6 +1,11 @@
 # Build outputs
 src/build/
 web/dist/
+src/ofono-server
+ofono-server
+
+# Databases
+*.db
 
 # Dependencies
 web/node_modules/

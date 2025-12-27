@@ -25,10 +25,17 @@
 
 /* ==================== 全局变量 ==================== */
 static GDBusConnection *g_dbus_conn = NULL;
-static GDBusProxy *g_modem_proxy = NULL;
 static pthread_mutex_t g_at_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char g_last_error[512] = {0};
 static char g_modem_path[64] = DEFAULT_MODEM_PATH;
+
+/* 全局 Proxy 缓存 */
+static struct {
+    GDBusProxy *modem;
+    GDBusProxy *nw_reg;
+    GDBusProxy *conn_mgr;
+    GDBusProxy *nw_mon;
+} g_proxies = {NULL, NULL, NULL, NULL};
 
 /* ==================== 内部辅助函数 ==================== */
 
@@ -40,43 +47,85 @@ static void set_error(const char *fmt, ...) {
     va_end(args);
 }
 
+/* 释放所有代理 */
+static void clear_proxies(void) {
+    if (g_proxies.modem) g_object_unref(g_proxies.modem);
+    if (g_proxies.nw_reg) g_object_unref(g_proxies.nw_reg);
+    if (g_proxies.conn_mgr) g_object_unref(g_proxies.conn_mgr);
+    if (g_proxies.nw_mon) g_object_unref(g_proxies.nw_mon);
+    memset(&g_proxies, 0, sizeof(g_proxies));
+}
+
 /* 检查 D-Bus 连接是否有效 */
 static int is_connection_valid(void) {
-    if (!g_dbus_conn) {
-        return 0;
-    }
-    if (g_dbus_connection_is_closed(g_dbus_conn)) {
-        g_object_unref(g_dbus_conn);
-        g_dbus_conn = NULL;
-        return 0;
-    }
+    if (!g_dbus_conn) return 0;
+    if (g_dbus_connection_is_closed(g_dbus_conn)) return 0;
     return 1;
 }
 
-/* 确保 D-Bus 连接有效，如果无效则重新连接 */
+/* 初始化所有代理 */
+static int init_proxies(void) {
+    GError *error = NULL;
+    
+    /* 1. Modem Proxy */
+    g_proxies.modem = g_dbus_proxy_new_sync(g_dbus_conn, G_DBUS_PROXY_FLAGS_NONE, NULL,
+        OFONO_SERVICE, g_modem_path, OFONO_MODEM_IFACE, NULL, &error);
+    if (!g_proxies.modem) goto fail;
+
+    /* 2. NetworkRegistration Proxy */
+    g_proxies.nw_reg = g_dbus_proxy_new_sync(g_dbus_conn, G_DBUS_PROXY_FLAGS_NONE, NULL,
+        OFONO_SERVICE, g_modem_path, "org.ofono.NetworkRegistration", NULL, &error);
+    if (!g_proxies.nw_reg) goto fail;
+
+    /* 3. ConnectionManager Proxy */
+    g_proxies.conn_mgr = g_dbus_proxy_new_sync(g_dbus_conn, G_DBUS_PROXY_FLAGS_NONE, NULL,
+        OFONO_SERVICE, g_modem_path, "org.ofono.ConnectionManager", NULL, &error);
+    if (!g_proxies.conn_mgr) goto fail;
+
+    /* 4. NetworkMonitor Proxy */
+    g_proxies.nw_mon = g_dbus_proxy_new_sync(g_dbus_conn, G_DBUS_PROXY_FLAGS_NONE, NULL,
+        OFONO_SERVICE, g_modem_path, "org.ofono.NetworkMonitor", NULL, &error);
+    if (!g_proxies.nw_mon) goto fail;
+
+    return 0;
+
+fail:
+    printf("初始化 D-Bus 代理失败: %s\n", error ? error->message : "unknown");
+    if (error) g_error_free(error);
+    clear_proxies();
+    return -1;
+}
+
+/* 确保 D-Bus 连接和代理有效 */
 static int ensure_connection(void) {
     GError *error = NULL;
 
-    if (is_connection_valid()) {
+    if (is_connection_valid() && g_proxies.modem != NULL) {
         return 1;
     }
+
+    /* 如果连接断开，先清理旧的 */
+    if (g_dbus_conn) {
+        g_object_unref(g_dbus_conn);
+        g_dbus_conn = NULL;
+    }
+    clear_proxies();
 
     g_dbus_conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);
     if (!g_dbus_conn) {
         if (error) g_error_free(error);
         return 0;
     }
-    return 1;
-}
 
-/* 验证 AT 命令格式 */
-static int validate_at_command(const char *cmd) {
-    if (!cmd || strlen(cmd) < 2) return 0;
-    /* 检查是否以 AT 开头 (不区分大小写) */
-    if ((cmd[0] == 'A' || cmd[0] == 'a') && (cmd[1] == 'T' || cmd[1] == 't')) {
-        return 1;
+    /* 重新获取路径 */
+    char slot[16], ril_path[32];
+    if (get_current_slot(slot, ril_path) == 0 && strcmp(ril_path, "unknown") != 0) {
+        strncpy(g_modem_path, ril_path, sizeof(g_modem_path) - 1);
     }
-    return 0;
+
+    if (init_proxies() != 0) return 0;
+    
+    return 1;
 }
 
 /* ==================== dbus_core.h 接口实现 ==================== */
@@ -86,68 +135,20 @@ const char *dbus_get_last_error(void) {
 }
 
 int is_dbus_initialized(void) {
-    return (g_dbus_conn != NULL && g_modem_proxy != NULL) ? 1 : 0;
+    return (g_dbus_conn != NULL && g_proxies.modem != NULL) ? 1 : 0;
 }
 
 int init_dbus(void) {
-    GError *error = NULL;
-
-    if (g_dbus_conn != NULL && g_modem_proxy != NULL) {
-        return 0;  /* 已初始化 */
-    }
-
-    /* 动态获取当前卡槽路径 */
-    char slot[16], ril_path[32];
-    if (get_current_slot(slot, ril_path) == 0 && strcmp(ril_path, "unknown") != 0) {
-        strncpy(g_modem_path, ril_path, sizeof(g_modem_path) - 1);
-        g_modem_path[sizeof(g_modem_path) - 1] = '\0';
-        printf("D-Bus 使用卡槽: %s (%s)\n", slot, g_modem_path);
-    } else {
-        printf("D-Bus 使用默认卡槽: %s\n", g_modem_path);
-    }
-
-    /* 获取系统 D-Bus 连接 */
-    if (!g_dbus_conn) {
-        g_dbus_conn = g_bus_get_sync(G_BUS_TYPE_SYSTEM, NULL, &error);
-        if (!g_dbus_conn) {
-            set_error("连接系统 D-Bus 失败: %s", error ? error->message : "unknown");
-            if (error) g_error_free(error);
-            return -1;
-        }
-    }
-
-    /* 创建 oFono Modem 代理对象 */
-    g_modem_proxy = g_dbus_proxy_new_sync(
-        g_dbus_conn,
-        G_DBUS_PROXY_FLAGS_NONE,
-        NULL,
-        OFONO_SERVICE,
-        g_modem_path,
-        OFONO_MODEM_IFACE,
-        NULL,
-        &error
-    );
-
-    if (!g_modem_proxy) {
-        set_error("创建 oFono Modem 代理失败: %s", error ? error->message : "unknown");
-        if (error) g_error_free(error);
-        return -1;
-    }
-
-    printf("D-Bus 连接和 oFono Modem 对象初始化成功 (路径: %s)\n", g_modem_path);
-    return 0;
+    return ensure_connection() ? 0 : -1;
 }
 
 void close_dbus(void) {
-    if (g_modem_proxy) {
-        g_object_unref(g_modem_proxy);
-        g_modem_proxy = NULL;
-    }
+    clear_proxies();
     if (g_dbus_conn) {
         g_object_unref(g_dbus_conn);
         g_dbus_conn = NULL;
     }
-    printf("D-Bus 连接已关闭\n");
+    printf("D-Bus 连接和 Proxy 池已关闭\n");
 }
 
 int execute_at(const char *command, char **result) {
@@ -190,7 +191,7 @@ int execute_at(const char *command, char **result) {
 
         /* 调用 oFono 的 SendAtcmd 方法 */
         ret = g_dbus_proxy_call_sync(
-            g_modem_proxy,
+            g_proxies.modem,
             "SendAtcmd",
             g_variant_new("(s)", command),
             G_DBUS_CALL_FLAGS_NONE,
@@ -281,25 +282,13 @@ int ofono_network_get_mode_sync(const char* modem_path, char* buffer, int size, 
         return -1;
     }
 
-    proxy = g_dbus_proxy_new_sync(
-        g_dbus_conn, G_DBUS_PROXY_FLAGS_NONE, NULL,
-        OFONO_SERVICE, modem_path, OFONO_RADIO_SETTINGS,
-        NULL, &error
-    );
-
-    if (!proxy) {
-        if (error) g_error_free(error);
-        return -1;
-    }
-
     result = g_dbus_proxy_call_sync(
-        proxy, "GetProperties", NULL,
+        g_proxies.modem, "GetProperties", NULL,
         G_DBUS_CALL_FLAGS_NONE, timeout_ms, NULL, &error
     );
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
         return -1;
     }
 
@@ -503,25 +492,13 @@ int ofono_network_get_signal_strength(const char* modem_path, int* strength, int
         return -1;
     }
 
-    proxy = g_dbus_proxy_new_sync(
-        g_dbus_conn, G_DBUS_PROXY_FLAGS_NONE, NULL,
-        OFONO_SERVICE, modem_path, "org.ofono.NetworkRegistration",
-        NULL, &error
-    );
-
-    if (!proxy) {
-        if (error) g_error_free(error);
-        return -2;
-    }
-
     result = g_dbus_proxy_call_sync(
-        proxy, "GetProperties", NULL,
+        g_proxies.nw_reg, "GetProperties", NULL,
         G_DBUS_CALL_FLAGS_NONE, timeout_ms, NULL, &error
     );
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
         return -3;
     }
 
@@ -1168,46 +1145,113 @@ int ofono_set_apn_properties(const char *context_path,
 
 #define OFONO_NETWORK_MONITOR "org.ofono.NetworkMonitor"
 
-int ofono_get_serving_cell_tech(char *tech, int size) {
+int ofono_get_network_info(char *tech, int tech_size, char *band, int band_size) {
     GError *error = NULL;
     GVariant *result = NULL;
-    GDBusProxy *proxy = NULL;
     int ret = -1;
 
-    if (!tech || size <= 0 || !ensure_connection()) {
+    if (!tech || !band || !ensure_connection()) {
         return -1;
-    }
-
-    tech[0] = '\0';
-
-    /* 创建 NetworkMonitor 代理 */
-    proxy = g_dbus_proxy_new_sync(
-        g_dbus_conn, G_DBUS_PROXY_FLAGS_NONE, NULL,
-        OFONO_SERVICE, DEFAULT_MODEM_PATH, OFONO_NETWORK_MONITOR,
-        NULL, &error
-    );
-
-    if (!proxy) {
-        if (error) g_error_free(error);
-        return -2;
     }
 
     /* 调用 GetServingCellInformation */
     result = g_dbus_proxy_call_sync(
-        proxy, "GetServingCellInformation", NULL,
+        g_proxies.nw_mon, "GetServingCellInformation", NULL,
         G_DBUS_CALL_FLAGS_NONE, OFONO_TIMEOUT_MS, NULL, &error
     );
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
-        return -3;
+        return -2;
     }
 
-    /* 解析返回的 a{sv} 字典 */
     GVariant *props = g_variant_get_child_value(result, 0);
     if (props) {
         GVariantIter iter;
+        const gchar *key;
+        GVariant *value;
+
+        g_variant_iter_init(&iter, props);
+        while (g_variant_iter_next(&iter, "{&sv}", &key, &value)) {
+            if (g_strcmp0(key, "Technology") == 0) {
+                const gchar *t = g_variant_get_string(value, NULL);
+                if (t) {
+                    if (g_strcmp0(t, "nr") == 0) strncpy(tech, "5G NR", tech_size - 1);
+                    else if (g_strcmp0(t, "lte") == 0) strncpy(tech, "4G LTE", tech_size - 1);
+                    else strncpy(tech, t, tech_size - 1);
+                    tech[tech_size - 1] = '\0';
+                }
+            } else if (g_strcmp0(key, "Band") == 0) {
+                int b_val = g_variant_get_int32(value);
+                if (b_val > 0) {
+                    snprintf(band, band_size, "%d", b_val);
+                }
+            }
+            g_variant_unref(value);
+        }
+        g_variant_unref(props);
+        ret = 0;
+    }
+
+    g_variant_unref(result);
+    return ret;
+}
+
+int ofono_get_neighbor_cells(NeighborCell *cells, int max_count) {
+    GError *error = NULL;
+    GVariant *result = NULL;
+    int count = 0;
+
+    if (!cells || max_count <= 0 || !ensure_connection()) {
+        return -1;
+    }
+
+    result = g_dbus_proxy_call_sync(
+        g_proxies.nw_mon, "GetNeighboringCellInformation", NULL,
+        G_DBUS_CALL_FLAGS_NONE, OFONO_TIMEOUT_MS, NULL, &error
+    );
+
+    if (!result) {
+        if (error) g_error_free(error);
+        return -2;
+    }
+
+    GVariant *array = g_variant_get_child_value(result, 0);
+    GVariantIter iter;
+    GVariant *dict;
+
+    g_variant_iter_init(&iter, array);
+    while ((dict = g_variant_iter_next_value(&iter)) != NULL && count < max_count) {
+        NeighborCell *c = &cells[count];
+        memset(c, 0, sizeof(NeighborCell));
+
+        GVariantIter dict_iter;
+        const gchar *key;
+        GVariant *value;
+
+        g_variant_iter_init(&dict_iter, dict);
+        while (g_variant_iter_next(&dict_iter, "{&sv}", &key, &value)) {
+            if (g_strcmp0(key, "Technology") == 0) {
+                strncpy(c->tech, g_variant_get_string(value, NULL), sizeof(c->tech) - 1);
+            } else if (g_strcmp0(key, "CellId") == 0) {
+                c->cell_id = g_variant_get_int32(value);
+            } else if (g_strcmp0(key, "RSRP") == 0 || g_strcmp0(key, "SignalStrength") == 0) {
+                c->rsrp = g_variant_get_int32(value);
+            } else if (g_strcmp0(key, "RSRQ") == 0) {
+                c->rsrq = g_variant_get_int32(value);
+            } else if (g_strcmp0(key, "EARFCN") == 0) {
+                c->earfcn = g_variant_get_int32(value);
+            }
+            g_variant_unref(value);
+        }
+        g_variant_unref(dict);
+        count++;
+    }
+
+    g_variant_unref(array);
+    g_variant_unref(result);
+    return count;
+}
         const gchar *key;
         GVariant *value;
 

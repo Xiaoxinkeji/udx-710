@@ -65,6 +65,15 @@ static int db_create_tables(void) {
         "token TEXT UNIQUE NOT NULL,"
         "expire_time INTEGER NOT NULL,"
         "created_at INTEGER NOT NULL"
+        ");"
+        "CREATE TABLE IF NOT EXISTS automation_rules ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "name TEXT NOT NULL,"
+        "trigger TEXT NOT NULL,"
+        "operator TEXT NOT NULL,"
+        "value REAL NOT NULL,"
+        "action TEXT NOT NULL,"
+        "enabled INTEGER DEFAULT 1"
         ");";
     
     return db_execute(sql);

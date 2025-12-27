@@ -160,6 +160,16 @@ async function handleClearCache() {
       <div class="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2"></div>
       
       <div class="relative">
+        <!-- 动态波浪背景 (SVG 动画) -->
+        <div class="absolute inset-0 -m-6 opacity-30 pointer-events-none overflow-hidden rounded-3xl">
+          <svg class="absolute bottom-0 left-0 w-[200%] h-32 text-indigo-400/20 fill-current animate-wave-slow" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M0,60 C150,110 300,10 450,60 C600,110 750,10 900,60 C1050,110 1200,10 1350,60 L1350,120 L0,120 Z"></path>
+          </svg>
+          <svg class="absolute bottom-0 left-0 w-[200%] h-24 text-purple-400/30 fill-current animate-wave-fast" viewBox="0 0 1200 120" preserveAspectRatio="none">
+            <path d="M0,50 C150,0 300,100 450,50 C600,0 750,100 900,50 C1050,0 1200,100 1350,50 L1350,120 L0,120 Z" opacity="0.5"></path>
+          </svg>
+        </div>
+
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center space-x-3">
             <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
@@ -204,7 +214,12 @@ async function handleClearCache() {
                 <i class="fas fa-tower-cell text-white text-xs sm:text-sm md:text-lg"></i>
               </div>
               <p class="text-slate-600 dark:text-white/50 text-[10px] sm:text-xs mb-0.5">{{ t('monitor.networkType') }}</p>
-              <p class="text-slate-800 dark:text-white font-bold text-sm sm:text-base md:text-lg">{{ formatBandValue(currentBand.network_type) }}</p>
+              <p class="text-slate-800 dark:text-white font-bold text-sm sm:text-base md:text-lg">
+                {{ formatBandValue(currentBand.network_type) }}
+                <span v-if="currentBand?.network_type?.includes('5G')">🚀</span>
+                <span v-else-if="currentBand?.network_type?.includes('4G') || currentBand?.network_type?.includes('LTE')">🚗</span>
+                <span v-else-if="currentBand?.network_type">🚲</span>
+              </p>
             </div>
           </div>
           
@@ -520,7 +535,12 @@ async function handleClearCache() {
               <i class="fas fa-temperature-high text-white text-sm sm:text-base md:text-xl"></i>
             </div>
             <p class="text-slate-600 dark:text-white/50 text-[10px] sm:text-xs mb-0.5">{{ t('monitor.temperature') }}</p>
-            <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">{{ systemInfo?.thermal_temp || '-' }}</p>
+            <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">
+              {{ systemInfo?.thermal_temp || '-' }} 
+              <span v-if="parseFloat(systemInfo?.thermal_temp) > 60">🔥</span>
+              <span v-else-if="parseFloat(systemInfo?.thermal_temp) > 45">🌡️</span>
+              <span v-else>❄️</span>
+            </p>
           </div>
         </div>
         
@@ -531,7 +551,10 @@ async function handleClearCache() {
               <i class="fas fa-plug text-white text-sm sm:text-base md:text-xl"></i>
             </div>
             <p class="text-slate-600 dark:text-white/50 text-[10px] sm:text-xs mb-0.5">{{ t('monitor.power') }}</p>
-            <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">{{ systemInfo?.power_status || '-' }}</p>
+            <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">
+              {{ systemInfo?.power_status || '-' }}
+              <span>{{ systemInfo?.power_status?.includes('Charging') ? '⚡' : '🔌' }}</span>
+            </p>
           </div>
         </div>
         
@@ -542,7 +565,10 @@ async function handleClearCache() {
               <i class="fas fa-heart-pulse text-white text-sm sm:text-base md:text-xl"></i>
             </div>
             <p class="text-slate-600 dark:text-white/50 text-[10px] sm:text-xs mb-0.5">{{ t('monitor.batteryHealth') }}</p>
-            <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">{{ systemInfo?.battery_health || '-' }}</p>
+            <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">
+              {{ systemInfo?.battery_health || '-' }}
+              <span>{{ systemInfo?.battery_health === 'Good' ? '✅' : '⚠️' }}</span>
+            </p>
           </div>
         </div>
         
@@ -553,7 +579,10 @@ async function handleClearCache() {
               <i class="fas fa-battery-three-quarters text-white text-sm sm:text-base md:text-xl"></i>
             </div>
             <p class="text-slate-600 dark:text-white/50 text-[10px] sm:text-xs mb-0.5">{{ t('monitor.batteryCapacity') }}</p>
-            <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">{{ systemInfo?.battery_capacity || '-' }}</p>
+            <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">
+              {{ systemInfo?.battery_capacity || '-' }}% 
+              <span>{{ systemInfo?.battery_capacity > 80 ? '🔋' : systemInfo?.battery_capacity > 20 ? '🪫' : '🆘' }}</span>
+            </p>
           </div>
         </div>
       </div>
@@ -609,3 +638,15 @@ async function handleClearCache() {
     </div>
   </div>
 </template>
+<style scoped>
+@keyframes wave {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-wave-slow {
+  animation: wave 15s linear infinite;
+}
+.animate-wave-fast {
+  animation: wave 10s linear infinite;
+}
+</style>

@@ -31,22 +31,22 @@ export async function authFetch(url, options = {}) {
   const headers = {
     ...options.headers
   }
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
-  
+
   const response = await fetch(url, {
     ...options,
     headers
   })
-  
+
   // 处理401未授权响应
   if (response.status === 401) {
     clearAuthToken()
     window.dispatchEvent(new CustomEvent('auth-required'))
   }
-  
+
   return response
 }
 
@@ -57,17 +57,17 @@ async function request(url, options = {}) {
     'Content-Type': 'application/json',
     ...options.headers
   }
-  
+
   // 添加Authorization头
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
-  
+
   const response = await fetch(`${BASE_URL}${url}`, {
     headers,
     ...options
   })
-  
+
   // 处理401未授权响应
   if (response.status === 401) {
     clearAuthToken()
@@ -75,7 +75,7 @@ async function request(url, options = {}) {
     window.dispatchEvent(new CustomEvent('auth-required'))
     throw new Error('未授权，请重新登录')
   }
-  
+
   if (!response.ok) {
     throw new Error(`HTTP错误: ${response.status}`)
   }
@@ -257,10 +257,10 @@ export async function getCells() {
 export async function lockCell(technology, arfcn, pci) {
   return request('/api/lock_cell', {
     method: 'POST',
-    body: JSON.stringify({ 
-      technology, 
-      arfcn: arfcn.toString(), 
-      pci: pci.toString() 
+    body: JSON.stringify({
+      technology,
+      arfcn: arfcn.toString(),
+      pci: pci.toString()
     })
   })
 }
@@ -491,7 +491,34 @@ export async function authChangePassword(oldPassword, newPassword) {
 export async function authGetStatus() {
   const token = getAuthToken()
   const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
-  
+
   const response = await fetch('/api/auth/status', { headers })
   return response.json()
+}
+
+// 获取成就信息
+export async function getAchievements() {
+  return request('/api/achievements')
+}
+
+export async function getNeighborCells() {
+  return request('/api/network/neighbors')
+}
+
+export async function getAutomationRules() {
+  return request('/api/automation/rules')
+}
+
+export async function saveAutomationRule(rule) {
+  return request('/api/automation/save', {
+    method: 'POST',
+    body: JSON.stringify(rule)
+  })
+}
+
+export async function deleteAutomationRule(id) {
+  return request('/api/automation/delete', {
+    method: 'POST',
+    body: JSON.stringify({ id })
+  })
 }

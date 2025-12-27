@@ -20,6 +20,7 @@ typedef struct {
     unsigned long total_ram;      /* MB */
     unsigned long free_ram;       /* MB */
     unsigned long cached_ram;     /* MB */
+    double ram_percent;           /* % */
     double cpu_usage;             /* % */
     double uptime;                /* seconds */
     char bridge_status[32];
@@ -114,6 +115,11 @@ int get_network_type_and_band(char *net_type, size_t type_size, char *band, size
  * @return CPU 使用率 (%)
  */
 double get_cpu_usage(void);
+
+/**
+ * @brief 优化系统内存参数 (VM 调优 & OOM 保护)
+ */
+void system_optimize_memory(void);
 
 #ifdef __cplusplus
 }

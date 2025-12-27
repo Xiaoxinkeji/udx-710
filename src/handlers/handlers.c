@@ -16,8 +16,7 @@
 #include "exec_utils.h"
 #include "airplane.h"
 #include "modem.h"
-#include "http_utils.h"
-
+#include "achievement.h"
 
 /* GET /api/info - 获取系统信息 */
 void handle_info(struct mg_connection *c, struct mg_http_message *hm) {
@@ -75,6 +74,122 @@ void handle_info(struct mg_connection *c, struct mg_http_message *hm) {
     );
 
     HTTP_OK(c, json);
+}
+
+/* GET /api/achievements - 获取成就列表 */
+void handle_get_achievements(struct mg_connection *c, struct mg_http_message *hm) {
+    HTTP_CHECK_GET(c, hm);
+
+    achievement_check_system(); /* 触发一次检查 */
+    
+    Achievement list[10];
+    int count = achievement_get_list(list, 10);
+
+    char json[2048];
+    int offset = 0;
+    offset += snprintf(json + offset, sizeof(json) - offset, "[");
+    
+    for (int i = 0; i < count; i++) {
+        offset += snprintf(json + offset, sizeof(json) - offset,
+            "%s{\"id\":\"%s\",\"achieved\":%s,\"progress\":%d}",
+            i > 0 ? "," : "",
+            list[i].id, list[i].achieved ? "true" : "false", list[i].progress);
+    }
+    
+    offset += snprintf(json + offset, sizeof(json) - offset, "]");
+
+    HTTP_OK(c, json);
+}
+
+/* GET /api/network/neighbors - 获取邻区信息 */
+void handle_neighbor_cells(struct mg_connection *c, struct mg_http_message *hm) {
+    HTTP_CHECK_GET(c, hm);
+
+    NeighborCell cells[MAX_NEIGHBOR_CELLS];
+    int count = ofono_get_neighbor_cells(cells, MAX_NEIGHBOR_CELLS);
+
+    if (count < 0) {
+        HTTP_JSON(c, 500, "{\"status\":\"error\",\"message\":\"无法获取邻区信息\"}");
+        return;
+    }
+
+    char json[4096];
+    int offset = 0;
+    offset += snprintf(json + offset, sizeof(json) - offset, "[");
+    
+    for (int i = 0; i < count; i++) {
+        offset += snprintf(json + offset, sizeof(json) - offset,
+            "%s{\"tech\":\"%s\",\"cell_id\":%d,\"rsrp\":%d,\"rsrq\":%d,\"earfcn\":%d}",
+            i > 0 ? "," : "",
+            cells[i].tech, cells[i].cell_id, cells[i].rsrp, cells[i].rsrq, cells[i].earfcn);
+    }
+    
+    offset += snprintf(json + offset, sizeof(json) - offset, "]");
+    HTTP_OK(c, json);
+}
+
+    HTTP_OK(c, json);
+}
+
+/* GET /api/automation/rules - 获取自动化规则 */
+void handle_get_automation_rules(struct mg_connection *c, struct mg_http_message *hm) {
+    HTTP_CHECK_GET(c, hm);
+
+    AutomationRule rules[MAX_RULES];
+    int count = automation_get_rules(rules, MAX_RULES);
+
+    char json[4096];
+    int offset = 0;
+    offset += snprintf(json + offset, sizeof(json) - offset, "[");
+    
+    for (int i = 0; i < count; i++) {
+        offset += snprintf(json + offset, sizeof(json) - offset,
+            "%s{\"id\":%d,\"name\":\"%s\",\"trigger\":\"%s\",\"operator\":\"%s\",\"value\":%.2f,\"action\":\"%s\",\"enabled\":%d}",
+            i > 0 ? "," : "",
+            rules[i].id, rules[i].name, rules[i].trigger, rules[i].operator, rules[i].value, rules[i].action, rules[i].enabled);
+    }
+    
+    offset += snprintf(json + offset, sizeof(json) - offset, "]");
+    HTTP_OK(c, json);
+}
+
+/* POST /api/automation/save - 保存/更新规则 */
+void handle_save_automation_rule(struct mg_connection *c, struct mg_http_message *hm) {
+    HTTP_CHECK_POST(c, hm);
+
+    AutomationRule rule;
+    memset(&rule, 0, sizeof(rule));
+    
+    char name[64], trigger[32], op[4], action[128];
+    rule.id = mg_json_get_long(hm->body, "$.id", 0);
+    mg_json_get_str(hm->body, "$.name", name, sizeof(name));
+    mg_json_get_str(hm->body, "$.trigger", trigger, sizeof(trigger));
+    mg_json_get_str(hm->body, "$.operator", op, sizeof(op));
+    rule.value = mg_json_get_double(hm->body, "$.value", 0);
+    mg_json_get_str(hm->body, "$.action", action, sizeof(action));
+    rule.enabled = mg_json_get_long(hm->body, "$.enabled", 1);
+    
+    strncpy(rule.name, name, sizeof(rule.name)-1);
+    strncpy(rule.trigger, trigger, sizeof(rule.trigger)-1);
+    strncpy(rule.operator, op, sizeof(rule.operator)-1);
+    strncpy(rule.action, action, sizeof(rule.action)-1);
+
+    if (automation_save_rule(&rule) == 0) {
+        HTTP_JSON(c, 200, "{\"status\":\"ok\"}");
+    } else {
+        HTTP_JSON(c, 500, "{\"status\":\"error\",\"message\":\"保存失败\"}");
+    }
+}
+
+/* POST /api/automation/delete - 删除规则 */
+void handle_delete_automation_rule(struct mg_connection *c, struct mg_http_message *hm) {
+    HTTP_CHECK_POST(c, hm);
+    int id = mg_json_get_long(hm->body, "$.id", 0);
+    if (id > 0 && automation_delete_rule(id) == 0) {
+        HTTP_JSON(c, 200, "{\"status\":\"ok\"}");
+    } else {
+        HTTP_JSON(c, 500, "{\"status\":\"error\",\"message\":\"删除失败\"}");
+    }
 }
 
 /* JSON 字符串转义 - 处理特殊字符 */
