@@ -1252,27 +1252,3 @@ int ofono_get_neighbor_cells(NeighborCell *cells, int max_count) {
     g_variant_unref(result);
     return count;
 }
-        const gchar *key;
-        GVariant *value;
-
-        g_variant_iter_init(&iter, props);
-        while (g_variant_iter_next(&iter, "{&sv}", &key, &value)) {
-            if (g_strcmp0(key, "Technology") == 0) {
-                const gchar *tech_str = g_variant_get_string(value, NULL);
-                if (tech_str) {
-                    strncpy(tech, tech_str, size - 1);
-                    tech[size - 1] = '\0';
-                    ret = 0;
-                }
-                g_variant_unref(value);
-                break;
-            }
-            g_variant_unref(value);
-        }
-        g_variant_unref(props);
-    }
-
-    g_variant_unref(result);
-    g_object_unref(proxy);
-    return ret;
-}
