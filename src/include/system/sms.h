@@ -174,6 +174,21 @@ int sms_get_fix_enabled(void);
  */
 int sms_set_fix_enabled(int enabled);
 
+/**
+ * 获取管理员号码
+ * @param buf 缓冲区
+ * @param size 缓冲区大小
+ * @return 0成功, -1失败
+ */
+int sms_get_admin_number(char *buf, size_t size);
+
+/**
+ * 设置管理员号码
+ * @param number 管理员号码
+ * @return 0成功, -1失败
+ */
+int sms_set_admin_number(const char *number);
+
 #ifdef __cplusplus
 }
 #endif

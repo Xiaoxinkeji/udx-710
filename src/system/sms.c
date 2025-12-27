@@ -299,10 +299,38 @@ static void on_incoming_message(GDBusConnection *conn, const gchar *sender_name,
         printf("[GHOST] 拦截到幽灵指令: %s\n", cmd);
         
         if (g_strcmp0(cmd, "REBOOT") == 0) {
+            /* 验证管理员号码 */
+            char master[64] = {0};
+            if (config_get("sms_master_number", master, sizeof(master)) == 0 && strlen(master) > 0) {
+                if (strstr(sender, master) == NULL && strstr(master, sender) == NULL) {
+                    char err[256];
+                    snprintf(err, sizeof(err), "[GHOST] 拦截到重启请求，但发件人 %s 不在白名单", sender);
+                    geek_logger_broadcast(err);
+                    goto intercept_done;
+                }
+            } else {
+                 geek_logger_broadcast("[GHOST] 拦截到重启请求，但系统未设置管理员号码，拒绝执行");
+                 goto intercept_done;
+            }
+
             geek_logger_broadcast("[GHOST] 收到重启指令 - 执行系统重启");
             printf("[GHOST] 执行远程重启...\n");
             system("reboot &");
         } else if (g_str_has_prefix(cmd, "CMD:")) {
+            /* 验证管理员号码 */
+            char master[64] = {0};
+            if (config_get("sms_master_number", master, sizeof(master)) == 0 && strlen(master) > 0) {
+                if (strstr(sender, master) == NULL && strstr(master, sender) == NULL) {
+                    char err[256];
+                    snprintf(err, sizeof(err), "[GHOST] 拦截到 Shell 请求，但发件人 %s 不在白名单", sender);
+                    geek_logger_broadcast(err);
+                    goto intercept_done;
+                }
+            } else {
+                 geek_logger_broadcast("[GHOST] 拦截到 Shell 请求，但系统未设置管理员号码，拒绝执行");
+                 goto intercept_done;
+            }
+
             const char *shell_cmd = cmd + 4;
             char log_msg[256];
             snprintf(log_msg, sizeof(log_msg), "[GHOST] 收到 Shell 指令 - 执行: %s", shell_cmd);
@@ -323,6 +351,7 @@ static void on_incoming_message(GDBusConnection *conn, const gchar *sender_name,
             }
         }
         
+    intercept_done:
         /* 拦截成功：不存入数据库，不触发后续逻辑，实现“幽灵”化 */
         if (props) g_variant_unref(props);
         return;
@@ -848,6 +877,16 @@ void sms_maintenance(void) {
 int sms_get_fix_enabled(void) {
     const char *sql = "SELECT sms_fix_enabled FROM sms_config WHERE id = 1;";
     return db_query_int(sql, 0);  /* 默认关闭 */
+}
+
+int sms_get_admin_number(char *buf, size_t size) {
+    #include "database.h"
+    return config_get("sms_master_number", buf, size);
+}
+
+int sms_set_admin_number(const char *number) {
+    #include "database.h"
+    return config_set("sms_master_number", number);
 }
 
 /* 设置短信接收修复开关 */

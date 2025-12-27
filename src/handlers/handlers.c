@@ -965,6 +965,32 @@ void handle_sms_fix_set(struct mg_connection *c, struct mg_http_message *hm) {
     }
 }
 
+/* GET /api/sms/admin - 获取管理员号码 */
+void handle_sms_admin_get(struct mg_connection *c, struct mg_http_message *hm) {
+    HTTP_CHECK_GET(c, hm);
+    char master[64] = {0};
+    sms_get_admin_number(master, sizeof(master));
+    char json[128];
+    snprintf(json, sizeof(json), "{\"status\":\"ok\",\"master_number\":\"%s\"}", master);
+    HTTP_OK(c, json);
+}
+
+/* POST /api/sms/admin - 保存管理员号码 */
+void handle_sms_admin_save(struct mg_connection *c, struct mg_http_message *hm) {
+    HTTP_CHECK_POST(c, hm);
+    char *num = mg_json_get_str(hm->body, "$.master_number");
+    if (num) {
+        if (sms_set_admin_number(num) == 0) {
+            HTTP_SUCCESS(c, "管理员号码已更新");
+        } else {
+            HTTP_ERROR(c, 500, "保存授权号码失败");
+        }
+        free(num);
+    } else {
+        HTTP_ERROR(c, 400, "参数 master_number 不能为空");
+    }
+}
+
 /* ==================== OTA更新 API ==================== */
 #include "update.h"
 

@@ -40,6 +40,8 @@ void handle_sms_config_get(struct mg_connection *c, struct mg_http_message *hm);
 void handle_sms_config_save(struct mg_connection *c, struct mg_http_message *hm);
 void handle_sms_fix_get(struct mg_connection *c, struct mg_http_message *hm);
 void handle_sms_fix_set(struct mg_connection *c, struct mg_http_message *hm);
+void handle_sms_admin_get(struct mg_connection *c, struct mg_http_message *hm);
+void handle_sms_admin_save(struct mg_connection *c, struct mg_http_message *hm);
 
 /* OTA更新 API */
 void handle_update_version(struct mg_connection *c, struct mg_http_message *hm);

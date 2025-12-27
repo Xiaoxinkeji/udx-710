@@ -102,15 +102,27 @@ void automation_check_cycle(void) {
 }
 
 int automation_save_rule(AutomationRule *rule) {
-    char sql[512];
+    char sql[1024];
+    char e_name[128], e_trigger[64], e_op[16], e_action[256];
+    
+    /* 转义 SQL 并清理分隔符 '|' */
+    db_escape_string(rule->name, e_name, sizeof(e_name));
+    db_escape_string(rule->trigger, e_trigger, sizeof(e_trigger));
+    db_escape_string(rule->operator, e_op, sizeof(e_op));
+    db_escape_string(rule->action, e_action, sizeof(e_action));
+
+    /* 替换分隔符以防解析错误 */
+    for(int i=0; e_name[i]; i++) if(e_name[i] == '|') e_name[i] = ' ';
+    for(int i=0; e_action[i]; i++) if(e_action[i] == '|') e_action[i] = ' ';
+    
     if (rule->id <= 0) {
         snprintf(sql, sizeof(sql),
             "INSERT INTO automation_rules (name, trigger, operator, value, action, enabled) VALUES ('%s', '%s', '%s', %f, '%s', %d)",
-            rule->name, rule->trigger, rule->operator, rule->value, rule->action, rule->enabled);
+            e_name, e_trigger, e_op, rule->value, e_action, rule->enabled);
     } else {
         snprintf(sql, sizeof(sql),
             "UPDATE automation_rules SET name='%s', trigger='%s', operator='%s', value=%f, action='%s', enabled=%d WHERE id=%d",
-            rule->name, rule->trigger, rule->operator, rule->value, rule->action, rule->enabled, rule->id);
+            e_name, e_trigger, e_op, rule->value, e_action, rule->enabled, rule->id);
     }
     return db_execute_safe(sql);
 }

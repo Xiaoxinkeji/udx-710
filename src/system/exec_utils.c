@@ -12,22 +12,17 @@
 #include <signal.h>
 #include "exec_utils.h"
 
-int run_command(char *output, size_t size, const char *cmd, ...) {
-    va_list args;
+int run_command_v(char *output, size_t size, const char *cmd, va_list args) {
     char *argv[32];
     int argc = 0;
 
-    /* 构建参数数组 */
     argv[argc++] = (char *)cmd;
-    va_start(args, cmd);
     char *arg;
     while ((arg = va_arg(args, char *)) != NULL && argc < 31) {
         argv[argc++] = arg;
     }
-    va_end(args);
     argv[argc] = NULL;
 
-    /* 创建管道 */
     int pipefd[2];
     if (pipe(pipefd) == -1) return -1;
 
@@ -39,7 +34,6 @@ int run_command(char *output, size_t size, const char *cmd, ...) {
     }
 
     if (pid == 0) {
-        /* 子进程 */
         close(pipefd[0]);
         dup2(pipefd[1], STDOUT_FILENO);
         dup2(pipefd[1], STDERR_FILENO);
@@ -48,10 +42,7 @@ int run_command(char *output, size_t size, const char *cmd, ...) {
         _exit(127);
     }
 
-    /* 父进程 */
     close(pipefd[1]);
-
-    /* 读取输出 */
     size_t total = 0;
     ssize_t n;
     while (total < size - 1 && (n = read(pipefd[0], output + total, size - 1 - total)) > 0) {
@@ -60,11 +51,9 @@ int run_command(char *output, size_t size, const char *cmd, ...) {
     output[total] = '\0';
     close(pipefd[0]);
 
-    /* 等待子进程 */
     int status;
     waitpid(pid, &status, 0);
 
-    /* 去除尾部空白 */
     while (total > 0 && (output[total-1] == '\n' || output[total-1] == '\r' || output[total-1] == ' ')) {
         output[--total] = '\0';
     }
@@ -72,12 +61,18 @@ int run_command(char *output, size_t size, const char *cmd, ...) {
     return WIFEXITED(status) && WEXITSTATUS(status) == 0 ? 0 : -1;
 }
 
-int run_command_timeout(int timeout_sec, char *output, size_t size, const char *cmd, ...) {
-    /* 简化实现：直接调用 run_command */
-    /* TODO: 实现真正的超时机制 */
+int run_command(char *output, size_t size, const char *cmd, ...) {
     va_list args;
     va_start(args, cmd);
-    int ret = run_command(output, size, cmd, args);
+    int ret = run_command_v(output, size, cmd, args);
+    va_end(args);
+    return ret;
+}
+
+int run_command_timeout(int timeout_sec, char *output, size_t size, const char *cmd, ...) {
+    va_list args;
+    va_start(args, cmd);
+    int ret = run_command_v(output, size, cmd, args);
     va_end(args);
     return ret;
 }

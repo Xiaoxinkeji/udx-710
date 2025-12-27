@@ -256,6 +256,13 @@ static void http_handler(struct mg_connection *c, int ev, void *ev_data) {
                 handle_sms_fix_set(c, hm);
             }
         }
+        else if (mg_match(hm->uri, mg_str("/api/sms/admin"), NULL)) {
+            if (hm->method.len == 3 && memcmp(hm->method.buf, "GET", 3) == 0) {
+                handle_sms_admin_get(c, hm);
+            } else {
+                handle_sms_admin_save(c, hm);
+            }
+        }
         else if (mg_match(hm->uri, mg_str("/api/sms/*"), NULL)) {
             handle_sms_delete(c, hm);
         }
