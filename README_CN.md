@@ -17,12 +17,12 @@
 
 > 💡 **切换版本**: `git checkout SZ50` 切换到SZ50专用版，`git checkout main` 切换到通用版
 
-### 📥 软件下载
+### 📥 软件下载与安装
 
-| 版本 | 下载链接 |
+| 资源 | 链接 |
 |:---:|:---:|
-| **UDX710 通用版** | [📥 点击下载](https://github.com/LeoChen-CoreMind/UDX710-UOOLS/releases/latest) |
-| **SZ50 专用版** | [📥 点击下载](https://github.com/LeoChen-CoreMind/UDX710-UOOLS/releases/latest) |
+| **Release 下载** | [📥 GitHub Releases](https://github.com/LeoChen-CoreMind/UDX710-UOOLS/releases/latest) |
+| **安装教程** | [📖 部署指南 (INSTALL_CN.md)](docs/INSTALL_CN.md) |
 
 ### SZ50专用版额外功能
 - 🔆 **LED灯控制** - 自定义LED指示灯状态
