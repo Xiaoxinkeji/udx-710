@@ -14,6 +14,7 @@
 #include <sys/socket.h>
 #include <linux/netlink.h>
 #include <time.h>
+#include <stdbool.h>
 #include <glib.h>
 #include "mongoose.h"
 #include "charge.h"
@@ -335,10 +336,9 @@ void handle_charge_config(struct mg_connection *c, struct mg_http_message *hm) {
         /* POST - 设置配置 */
         int enabled = 0, start = 20, stop = 80;
         double val = 0;
-        int bval = 0;
-
         /* 使用mongoose内置JSON解析 */
-        if (mg_json_get_bool(hm->body, "$.enabled", &bval)) enabled = bval;
+        bool bval = false;
+        if (mg_json_get_bool(hm->body, "$.enabled", &bval)) enabled = bval ? 1 : 0;
         if (mg_json_get_num(hm->body, "$.startThreshold", &val)) start = (int)val;
         if (mg_json_get_num(hm->body, "$.stopThreshold", &val)) stop = (int)val;
 

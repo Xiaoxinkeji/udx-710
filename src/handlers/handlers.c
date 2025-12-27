@@ -265,24 +265,6 @@ void handle_execute_at(struct mg_connection *c, struct mg_http_message *hm) {
 
 
 /* 简单 JSON 字符串提取 */
-static int extract_json_string(const char *json, const char *key, char *value, size_t size) {
-    char pattern[64];
-    snprintf(pattern, sizeof(pattern), "\"%s\"", key);
-    char *p = strstr(json, pattern);
-    if (!p) return -1;
-    p = strchr(p + strlen(pattern), ':');
-    if (!p) return -1;
-    p = strchr(p, '"');
-    if (!p) return -1;
-    p++;
-    char *end = strchr(p, '"');
-    if (!end) return -1;
-    size_t len = end - p;
-    if (len >= size) len = size - 1;
-    memcpy(value, p, len);
-    value[len] = '\0';
-    return 0;
-}
 
 /* POST /api/set_network - 设置网络模式 */
 void handle_set_network(struct mg_connection *c, struct mg_http_message *hm) {

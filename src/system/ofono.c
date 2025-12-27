@@ -1197,6 +1197,18 @@ int ofono_get_network_info(char *tech, int tech_size, char *band, int band_size)
     return ret;
 }
 
+int ofono_get_serving_cell_tech(char *buffer, int size) {
+    char band[64] = {0};
+    return ofono_get_network_info(buffer, size, band, sizeof(band));
+}
+
+int validate_at_command(const char *cmd) {
+    if (!cmd || strlen(cmd) < 2) return 0;
+    /* 允许大部分命令，特别是带有 & 的初始化命令 */
+    if (strchr(cmd, ';') || strchr(cmd, '|') || strchr(cmd, '`')) return 0;
+    return 1;
+}
+
 int ofono_get_neighbor_cells(NeighborCell *cells, int max_count) {
     GError *error = NULL;
     GVariant *result = NULL;

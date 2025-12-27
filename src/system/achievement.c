@@ -52,12 +52,12 @@ void achievement_check_system(void) {
     achievement_update("traffic_master", mem_prog);
 }
 
-Achievement *achievement_get_list(int *count) {
+int achievement_get_list(Achievement *list, int max_count) {
     const char *ids[] = {"uptime_novice", "traffic_master", "signal_hunter"};
-    static Achievement list[3];
-    *count = 3;
+    int count = 3;
+    if (count > max_count) count = max_count;
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < count; i++) {
         char key_achieved[64], key_progress[64];
         snprintf(key_achieved, sizeof(key_achieved), "ach_%s_status", ids[i]);
         snprintf(key_progress, sizeof(key_progress), "ach_%s_progress", ids[i]);
@@ -67,5 +67,5 @@ Achievement *achievement_get_list(int *count) {
         list[i].progress = config_get_int(key_progress, 0);
     }
 
-    return list;
+    return count;
 }

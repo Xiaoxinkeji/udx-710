@@ -194,6 +194,21 @@ int ofono_get_neighbor_cells(NeighborCell *cells, int max_count);
 
 int ofono_get_network_info(char *tech, int tech_size, char *band, int band_size);
 
+/**
+ * 获取服务小区制式
+ * @param buffer 输出缓冲区
+ * @param size 缓冲区大小
+ * @return 成功返回0，失败返回错误码
+ */
+int ofono_get_serving_cell_tech(char *buffer, int size);
+
+/**
+ * 验证 AT 命令格式
+ * @param cmd 命令字符串
+ * @return 合法返回1，非法返回0
+ */
+int validate_at_command(const char *cmd);
+
 #ifdef __cplusplus
 }
 #endif

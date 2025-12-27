@@ -16,6 +16,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <stdbool.h>
 #include "mongoose.h"
 #include "usb_mode.h"
 #include "http_utils.h"
@@ -159,17 +160,17 @@ void handle_usb_mode_set(struct mg_connection *c, struct mg_http_message *hm) {
     
     char mode_str[32] = {0};
     int permanent = 0;
-    int bval = 0;
-    
+    bool paval = false;
+
     /* 解析JSON参数 */
     char *mode_val = mg_json_get_str(hm->body, "$.mode");
     if (mode_val) {
         strncpy(mode_str, mode_val, sizeof(mode_str) - 1);
         free(mode_val);
     }
-    
-    if (mg_json_get_bool(hm->body, "$.permanent", &bval)) {
-        permanent = bval;
+
+    if (mg_json_get_bool(hm->body, "$.permanent", &paval)) {
+        permanent = paval ? 1 : 0;
     }
     
     /* 验证模式 */
@@ -270,7 +271,7 @@ static void remove_function_links(void) {
     if (!dir) return;
     
     struct dirent *entry;
-    char path[256];
+    char path[512];
     while ((entry = readdir(dir)) != NULL) {
         if (entry->d_name[0] == '.') continue;
         snprintf(path, sizeof(path), "%s/%s", USB_CONFIG_PATH, entry->d_name);
