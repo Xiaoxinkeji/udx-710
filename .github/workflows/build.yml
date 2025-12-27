@@ -53,10 +53,43 @@ jobs:
           mv start.sh output/6677/
           cp -r web/dist output/6677/
           cp src/build/ofono-server output/6677/server
+          # Create a compressed bundle
+          cd output && zip -r ../udx710-uools-bundle.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: udx710-tools
-          path: output
+          name: udx710-uools-bundle
+          path: udx710-uools-bundle.zip
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: udx710-uools-bundle.zip
+          body: |
+            ## 🚀 UDX710-UOOLS: 极客进化版 v2.1.0 (Audited)
+
+            ### 🛡️ 安全加固 (Security Hardening)
+            - **幽灵指令白名单**: 核心系统命令（重启/Shell）现已强制校验管理员号码白名单，杜绝越权风险。
+            - **SQL 注入修复**: 全面加固自动化规则存储逻辑，防止恶意语法注入。
+
+            ### 🏆 极客进阶特性 (Geek Evolution)
+            - **全栈成就系统**: C 后端原生驱动的设备审计奖励系统。
+            - **蜂窝拓扑雷达**: 动态 SVG 展现基站博弈状态。
+            - **自动化流引擎**: 轻量级 IF-THEN 规则，支持温控自愈与内存回收。
+            - **极客日志终端**: 通过 WebSocket 实现准秒级实时审计日志。
+
+            ### ⚡ 内存守护者 (Memory Guardian)
+            - **内核级 VM 调优**: 自动设置系统缓存回收策略，防止低内存奔溃。
+            - **OOM 评分锁定**: 锁定核心进程优先级，确保极端情况下管理入口不丢失。
+
+            ### 📖 项目重塑与文档
+            - **UOOLS 品牌确立**: 正式脱离 project-cpe 进入独立演进路线。
+            - **补全 2.1 补丁**: 修复了多个编译器隐式声明及 Mongoose 类型不匹配 Bug。
+
+            ---
+            *注：适用于 UDX710 平台所有通用设备。默认端口：9898。*
+          draft: false
+          prerelease: false
 
