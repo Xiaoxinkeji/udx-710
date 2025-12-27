@@ -12,6 +12,7 @@
 #include "sysinfo.h"
 #include "http_server.h"
 #include "exec_utils.h"
+#include <glib.h>
 
 static int evaluate_condition(double current, const char *op, double threshold) {
     if (strcmp(op, ">") == 0) return current > threshold;
@@ -59,7 +60,7 @@ void automation_check_cycle(void) {
         int valid_trigger = 0;
 
         if (strcmp(rules[i].trigger, "temperature") == 0) {
-            current_val = info.temperature;
+            current_val = info.thermal_temp;
             valid_trigger = 1;
         } else if (strcmp(rules[i].trigger, "uptime") == 0) {
             current_val = info.uptime / 60.0; /* 分钟 */
