@@ -123,9 +123,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getAutomationRules, saveAutomationRule, deleteAutomationRule } from '@/composables/useApi'
-import { useToast } from '@/composables/useToast'
-import { useConfirm } from '@/composables/useConfirm'
+import { getAutomationRules, saveAutomationRule, deleteAutomationRule } from '../composables/useApi'
+import { useToast } from '../composables/useToast'
+import { useConfirm } from '../composables/useConfirm'
 
 const { success, error } = useToast()
 const { confirm } = useConfirm()

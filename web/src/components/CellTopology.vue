@@ -69,7 +69,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { getNeighborCells } from '@/composables/useApi'
+import { getNeighborCells } from '../composables/useApi'
 
 const neighbors = ref([])
 const hovered = ref(null)
