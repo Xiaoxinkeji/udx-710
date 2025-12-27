@@ -3,7 +3,7 @@
  * @brief 插件持久化存储实现
  * 
  * 使用flock文件锁保证并发安全
- * 存储路径: /home/root/6677/Plugins/data/<插件名>.json
+ * 存储路径: /home/root/9898/Plugins/data/<插件名>.json
  */
 
 #include <stdio.h>

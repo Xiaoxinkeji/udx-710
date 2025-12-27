@@ -15,7 +15,7 @@
  * 全局变量
  *============================================================================*/
 
-static char g_db_path[256] = "6677.db";
+static char g_db_path[256] = "9898.db";
 static pthread_mutex_t g_db_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_db_initialized = 0;
 

@@ -378,7 +378,7 @@ int http_server_start(const char *port) {
     init_charge();
 
     /* 初始化短信模块（必须在auth_init之前，因为auth依赖数据库） */
-    if (sms_init("6677.db") != 0) {
+    if (sms_init("9898.db") != 0) {
         printf("警告: 短信模块初始化失败\n");
     }
 

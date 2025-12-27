@@ -50,7 +50,7 @@ static void get_traffic_from_vnstat(long long *rx, long long *tx) {
     *rx = 0;
     *tx = 0;
 
-    if (run_command(output, sizeof(output), "/home/root/6677/vnstat", 
+    if (run_command(output, sizeof(output), "/home/root/9898/vnstat", 
                     "-i", NETWORK_IFACE, "--json", NULL) != 0) {
         return;
     }
@@ -114,12 +114,12 @@ static void init_vnstat_db(void) {
     struct stat st;
     char output[256];
     if (stat(VNSTAT_DB, &st) != 0) {
-        run_command(output, sizeof(output), "/home/root/6677/vnstatd", "--initdb", NULL);
-        char cmd[256];
-        snprintf(cmd, sizeof(cmd), "/home/root/6677/vnstat --add -i %s", NETWORK_IFACE);
-        run_command(output, sizeof(output), "sh", "-c", cmd, NULL);
+        run_command(output, sizeof(output), "/home/root/9898/vnstatd", "--initdb", NULL);
+        char cmd[128];
+        snprintf(cmd, sizeof(cmd), "/home/root/9898/vnstat --add -i %s", NETWORK_IFACE);
+        system(cmd);
     }
-    run_command(output, sizeof(output), "/home/root/6677/vnstatd", "--noadd", "--config", "/home/root/6677/vnstatd.conf", "-d", NULL);
+    run_command(output, sizeof(output), "/home/root/9898/vnstatd", "--noadd", "--config", "/home/root/9898/vnstatd.conf", "-d", NULL);
 }
 
 /* 初始化流量统计 */

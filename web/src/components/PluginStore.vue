@@ -506,7 +506,7 @@ const pluginAPI = {
   // 执行已上传的脚本
   runScript: async (scriptName) => {
     try {
-      const res = await executeShell(`sh /home/root/6677/Plugins/scripts/${scriptName}`)
+      const res = await executeShell(`sh /home/root/9898/Plugins/scripts/${scriptName}`)
       return res.Code === 0 ? res.Data : res.Error
     } catch (e) {
       return 'Error: ' + e.message

@@ -48,14 +48,14 @@ jobs:
 
       - name: dopack
         run: |
-          mkdir -p output/6677
+          mkdir -p output/9898
           echo "#!/bin/sh" > start.sh
-          echo "cd /home/root/6677" >> start.sh
+          echo "cd /home/root/9898" >> start.sh
           echo "chmod 755 *" >> start.sh
           echo "./server &" >> start.sh
-          mv start.sh output/6677/
-          cp -r web/dist output/6677/
-          cp src/build/ofono-server output/6677/server
+          mv start.sh output/9898/
+          cp -r web/dist output/9898/
+          cp src/build/ofono-server output/9898/server
           # Create a compressed bundle
           cd output && zip -r ../udx710-uools-bundle.zip .
 

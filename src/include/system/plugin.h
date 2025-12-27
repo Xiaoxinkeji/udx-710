@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 /* 插件存储目录 */
-#define PLUGIN_DIR "/home/root/6677/Plugins/plugins"
+#define PLUGIN_DIR "/home/root/9898/Plugins/plugins"
 
 /* 插件文件最大大小 (100KB) */
 #define PLUGIN_MAX_SIZE (100 * 1024)

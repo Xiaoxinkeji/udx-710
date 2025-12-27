@@ -21,8 +21,8 @@
 - 自定义UI界面与交互
 
 ### 存储路径
-- 插件: `/home/root/6677/Plugins/plugins/`
-- 脚本: `/home/root/6677/Plugins/scripts/`
+- 插件: `/home/root/9898/Plugins/plugins/`
+- 脚本: `/home/root/9898/Plugins/scripts/`
 
 ### 技术架构
 ```
@@ -633,7 +633,7 @@ window.PLUGIN = {
     },
     
     goPlugins() {
-      this.$data.path = '/home/root/6677/Plugins/plugins'
+      this.$data.path = '/home/root/9898/Plugins/plugins'
       this.browse()
     }
   },

@@ -9,7 +9,7 @@
 #include <stddef.h>
 
 /* 存储目录和限制 */
-#define PLUGIN_DATA_DIR "/home/root/6677/Plugins/data"
+#define PLUGIN_DATA_DIR "/home/root/9898/Plugins/data"
 #define PLUGIN_STORAGE_MAX_SIZE 65536  /* 64KB */
 
 /**

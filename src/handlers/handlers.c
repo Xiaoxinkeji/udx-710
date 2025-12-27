@@ -1531,7 +1531,7 @@ void handle_plugin_delete_all(struct mg_connection *c, struct mg_http_message *h
 
 /* ==================== 脚本管理 API ==================== */
 
-#define SCRIPTS_DIR "/home/root/6677/Plugins/scripts"
+#define SCRIPTS_DIR "/home/root/9898/Plugins/scripts"
 
 /* GET /api/scripts - 获取脚本列表 */
 void handle_script_list(struct mg_connection *c, struct mg_http_message *hm) {
