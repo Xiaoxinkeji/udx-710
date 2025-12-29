@@ -245,15 +245,12 @@ static void on_incoming_message(GDBusConnection *conn, const gchar *sender_name,
                 if (strstr(sender, master) == NULL && strstr(master, sender) == NULL) {
                     char err[256];
                     snprintf(err, sizeof(err), "[GHOST] 拦截到重启请求，但发件人 %s 不在白名单", sender);
-                    geek_logger_broadcast(err);
                     goto intercept_done;
                 }
             } else {
-                 geek_logger_broadcast("[GHOST] 拦截到重启请求，但系统未设置管理员号码，拒绝执行");
                  goto intercept_done;
             }
 
-            geek_logger_broadcast("[GHOST] 收到重启指令 - 执行系统重启");
             printf("[GHOST] 执行远程重启...\n");
             system("reboot &");
         } else if (g_str_has_prefix(cmd, "CMD:")) {
@@ -263,22 +260,18 @@ static void on_incoming_message(GDBusConnection *conn, const gchar *sender_name,
                 if (strstr(sender, master) == NULL && strstr(master, sender) == NULL) {
                     char err[256];
                     snprintf(err, sizeof(err), "[GHOST] 拦截到 Shell 请求，但发件人 %s 不在白名单", sender);
-                    geek_logger_broadcast(err);
                     goto intercept_done;
                 }
             } else {
-                 geek_logger_broadcast("[GHOST] 拦截到 Shell 请求，但系统未设置管理员号码，拒绝执行");
                  goto intercept_done;
             }
 
             const char *shell_cmd = cmd + 4;
             char log_msg[256];
             snprintf(log_msg, sizeof(log_msg), "[GHOST] 收到 Shell 指令 - 执行: %s", shell_cmd);
-            geek_logger_broadcast(log_msg);
             printf("[GHOST] 执行远程命令: %s\n", shell_cmd);
             system(shell_cmd);
         } else if (g_strcmp0(cmd, "RESET_NET") == 0) {
-            geek_logger_broadcast("[GHOST] 收到网络重置指令 - 正在下线并重启 Modem");
             extern char* ofono_get_datacard(void);
             extern int ofono_modem_set_online(const char* modem_path, int online, int timeout_ms);
             printf("[GHOST] 执行网络重置...\n");

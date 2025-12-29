@@ -1,15 +1,5 @@
 export default {
-  achievements: {
-    title: 'Achievements',
-    uptimeNovice: 'Initial Stability',
-    uptimeNoviceDesc: 'Connected for more than 1 hour',
-    trafficMaster: 'Traffic Master',
-    trafficMasterDesc: 'Cumulative data usage exceeds 10GB',
-    signalHunter: 'Signal Hunter',
-    signalHunterDesc: 'Connection strength is better than -80dBm',
-    unlocked: 'Unlocked',
-    locked: 'Locked'
-  },
+
   // Common
   common: {
     refresh: 'Refresh',
@@ -75,10 +65,8 @@ export default {
     at: 'AT Debug',
     terminal: 'Terminal',
     usb: 'USB Mode',
-    achievements: 'Achievements',
-    topology: 'Topology',
     automation: 'Automation',
-    logger: 'Geek Logger',
+    plugins: 'Plugins',
     plugins: 'Plugins',
     settings: 'Settings'
   },
@@ -130,7 +118,6 @@ export default {
     systemDetails: 'System Details',
     systemName: 'System Name',
     kernelVersion: 'Kernel Version',
-    qqGroup: 'QQ Group',
     cacheCleared: 'Cache cleared successfully',
     cacheClearFailed: 'Failed to clear cache',
     confirmClearCache: 'Are you sure to clear system cache?'

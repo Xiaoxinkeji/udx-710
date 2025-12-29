@@ -496,10 +496,7 @@ export async function authGetStatus() {
   return response.json()
 }
 
-// 获取成就信息
-export async function getAchievements() {
-  return request('/api/achievements')
-}
+
 
 export async function getNeighborCells() {
   return request('/api/network/neighbors')

@@ -75,26 +75,21 @@ void automation_check_cycle(void) {
             char log_msg[256];
             snprintf(log_msg, sizeof(log_msg), "[AUTO] 规则命中: %s (当前值: %.2f %s %.2f)", 
                    rules[i].name, current_val, rules[i].operator, rules[i].value);
-            geek_logger_broadcast(log_msg);
             printf("%s\n", log_msg);
             
             if (strcmp(rules[i].action, "reboot") == 0) {
-                geek_logger_broadcast("[AUTO] 执行动作: 重启设备");
                 printf("[AUTO] 执行动作: 重启设备\n");
                 system("reboot &");
             } else if (g_str_has_prefix(rules[i].action, "shell:")) {
                 const char *cmd = rules[i].action + 6;
                 char act_msg[256];
                 snprintf(act_msg, sizeof(act_msg), "[AUTO] 执行自定义命令: %s", cmd);
-                geek_logger_broadcast(act_msg);
                 printf("%s\n", act_msg);
                 system(cmd);
             } else if (strcmp(rules[i].action, "drop_caches") == 0) {
-                geek_logger_broadcast("[AUTO] 执行动作: 释放系统缓存 (Drop Caches)");
                 printf("[AUTO] 执行动作: 释放系统缓存\n");
                 system("echo 3 > /proc/sys/vm/drop_caches");
             } else if (strcmp(rules[i].action, "compact_memory") == 0) {
-                geek_logger_broadcast("[AUTO] 执行动作: 整理内存碎片 (Compact Memory)");
                 printf("[AUTO] 执行动作: 整理内存碎片\n");
                 system("echo 1 > /proc/sys/vm/compact_memory");
             }

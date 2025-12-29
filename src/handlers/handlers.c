@@ -17,7 +17,6 @@
 #include "exec_utils.h"
 #include "airplane.h"
 #include "modem.h"
-#include "achievement.h"
 #include "ofono.h"
 #include "automation.h"
 #include "http_utils.h"
@@ -80,30 +79,6 @@ void handle_info(struct mg_connection *c, struct mg_http_message *hm) {
     HTTP_OK(c, json);
 }
 
-/* GET /api/achievements - 获取成就列表 */
-void handle_get_achievements(struct mg_connection *c, struct mg_http_message *hm) {
-    HTTP_CHECK_GET(c, hm);
-
-    achievement_check_system(); /* 触发一次检查 */
-    
-    Achievement list[10];
-    int count = achievement_get_list(list, 10);
-
-    char json[2048];
-    int offset = 0;
-    offset += snprintf(json + offset, sizeof(json) - offset, "[");
-    
-    for (int i = 0; i < count; i++) {
-        offset += snprintf(json + offset, sizeof(json) - offset,
-            "%s{\"id\":\"%s\",\"achieved\":%s,\"progress\":%d}",
-            i > 0 ? "," : "",
-            list[i].id, list[i].achieved ? "true" : "false", list[i].progress);
-    }
-    
-    offset += snprintf(json + offset, sizeof(json) - offset, "]");
-
-    HTTP_OK(c, json);
-}
 
 /* GET /api/network/neighbors - 获取邻区信息 */
 void handle_neighbor_cells(struct mg_connection *c, struct mg_http_message *hm) {

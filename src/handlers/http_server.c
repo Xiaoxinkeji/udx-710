@@ -147,9 +147,6 @@ static void http_handler(struct mg_connection *c, int ev, void *ev_data) {
         else if (mg_match(hm->uri, mg_str("/api/current_band"), NULL)) {
             handle_get_current_band(c, hm);
         }
-        else if (mg_match(hm->uri, mg_str("/api/achievements"), NULL)) {
-            handle_get_achievements(c, hm);
-        }
         else if (mg_match(hm->uri, mg_str("/api/network/neighbors"), NULL)) {
             handle_neighbor_cells(c, hm);
         }
@@ -438,12 +435,6 @@ void http_server_run(void) {
             sms_maintenance();
         }
 
-        /* 每分钟检查一次成就状态 */
-        static int ach_counter = 0;
-        if (++ach_counter >= 6000) { /* 6000 * 10ms = 60秒 */
-            ach_counter = 0;
-            achievement_check_system();
-        }
 
         /* 每10秒检查一次自动化规则 */
         static int auto_counter = 0;
@@ -454,12 +445,4 @@ void http_server_run(void) {
     }
 }
 
-void geek_logger_broadcast(const char *msg) {
-    if (!msg) return;
-    struct mg_connection *c;
-    for (c = g_mgr.conns; c != NULL; c = c->next) {
-        if (c->is_websocket) {
-            mg_ws_send(c, msg, strlen(msg), WEBSOCKET_OP_TEXT);
-        }
-    }
-}
+

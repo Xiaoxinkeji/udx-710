@@ -27,10 +27,7 @@ void http_server_stop(void);
  */
 void http_server_run(void);
 
-/**
- * @brief 向所有 WebSocket 客户端广播日志消息
- */
-void geek_logger_broadcast(const char *msg);
+
 
 #ifdef __cplusplus
 }
