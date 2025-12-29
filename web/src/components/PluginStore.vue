@@ -20,7 +20,7 @@ const uploading = ref(false)
 const activeTab = ref('installed') // 'installed' | 'store'
 const storePlugins = ref([])
 const storeLoading = ref(false)
-const STORE_URL = 'https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/plugins.json'
+const STORE_URL = 'https://mirror.ghproxy.com/https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/plugins.json'
 
 // 上传相关
 const showUploadModal = ref(false)
@@ -94,7 +94,9 @@ async function fetchStore() {
 async function installFromStore(item) {
   try {
     info('正在从云端下载: ' + item.name)
-    const res = await fetch(item.url)
+    // 使用 CORS 代理绕过 GitHub 的跨域限制
+    const proxyUrl = 'https://mirror.ghproxy.com/' + item.url
+    const res = await fetch(proxyUrl)
     if (!res.ok) throw new Error('Download failed')
     const content = await res.text()
     
