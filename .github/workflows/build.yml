@@ -90,6 +90,5 @@ jobs:
             ---
             *注：适用于 UDX710 平台所有通用设备。默认端口：9898。*
           draft: false
-          draft: false
           prerelease: false
 
