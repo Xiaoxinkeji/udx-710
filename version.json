@@ -1,7 +1,7 @@
 {
-    "version": "1.5.5",
-    "url": "https://github.com/Xiaoxinkeji/udx-710/releases/latest/download/udx-710-update.zip",
-    "changelog": "1. 移除成就系统、网络拓扑、极客日志\n2. 优化系统性能与内存占用\n3. 更新品牌信息为小心科技\n4. 添加在线插件商城功能",
+    "version": "3.0.1",
+    "url": "https://github.com/Xiaoxinkeji/udx-710/releases/latest/download/udx710-uools-bundle.zip",
+    "changelog": "1. 新增 UFI 数据看板插件，支持全屏沉浸式监控\n2. 修复插件商城下载失败的问题（添加 CDN 代理）\n3. 优化插件安装流程与体验",
     "size": 10485760,
     "required": false
 }
