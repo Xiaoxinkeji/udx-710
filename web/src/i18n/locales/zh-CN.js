@@ -1,15 +1,4 @@
 export default {
-  achievements: {
-    title: '成就勋章',
-    uptimeNovice: '初步稳健',
-    uptimeNoviceDesc: '连续运行超过 1 小时',
-    trafficMaster: '流量达人',
-    trafficMasterDesc: '累计已使用超过 10GB 流量',
-    signalHunter: '信号猎手',
-    signalHunterDesc: '在信号强度优于 -80dBm 的环境下运行',
-    unlocked: '已解锁',
-    locked: '未解锁'
-  },
   // 通用文本
   common: {
     refresh: '刷新',
@@ -75,10 +64,7 @@ export default {
     at: 'AT调试',
     terminal: 'Web终端',
     usb: 'USB 模式',
-    achievements: '成就中心',
-    topology: '网络拓扑',
     automation: '自动化流',
-    logger: '极客日志',
     plugins: '插件商城',
     settings: '系统设置'
   },
