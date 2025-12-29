@@ -16,6 +16,12 @@ const plugins = ref([])
 const loading = ref(false)
 const uploading = ref(false)
 
+// 商店相关
+const activeTab = ref('installed') // 'installed' | 'store'
+const storePlugins = ref([])
+const storeLoading = ref(false)
+const STORE_URL = 'https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/plugins.json'
+
 // 上传相关
 const showUploadModal = ref(false)
 const pluginName = ref('')
@@ -64,6 +70,45 @@ async function fetchPlugins() {
     error(t('plugins.getListFailed'))
   } finally {
     loading.value = false
+  }
+}
+
+// 获取在线商店列表
+async function fetchStore() {
+  storeLoading.value = true
+  try {
+    const res = await fetch(STORE_URL + '?t=' + Date.now())
+    if (res.ok) {
+      storePlugins.value = await res.json()
+    } else {
+      throw new Error('Store server error')
+    }
+  } catch (e) {
+    error('获取在线商店失败: ' + e.message)
+  } finally {
+    storeLoading.value = false
+  }
+}
+
+// 从商店安装插件
+async function installFromStore(item) {
+  try {
+    info('正在从云端下载: ' + item.name)
+    const res = await fetch(item.url)
+    if (!res.ok) throw new Error('Download failed')
+    const content = await res.text()
+    
+    // 安装到本地
+    const uploadRes = await uploadPlugin(item.id, content)
+    if (uploadRes.Code === 0) {
+      success(t('plugins.installSuccess'))
+      fetchPlugins()
+      activeTab.value = 'installed'
+    } else {
+      error(uploadRes.Error || t('plugins.installFailed'))
+    }
+  } catch (e) {
+    error(t('plugins.installFailed') + ': ' + e.message)
   }
 }
 
@@ -911,6 +956,7 @@ function closePluginModal() {
 
 onMounted(() => {
   fetchPlugins()
+  fetchStore()
 })
 </script>
 
@@ -966,10 +1012,26 @@ onMounted(() => {
           </button>
         </div>
       </div>
+
+      <!-- 标签页切换 -->
+      <div class="flex mt-6 border-b border-slate-200 dark:border-white/10">
+        <button @click="activeTab = 'installed'"
+          class="px-6 py-3 text-sm font-medium transition-all relative"
+          :class="activeTab === 'installed' ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 dark:text-white/50 dark:hover:text-white/80'">
+          <i class="fas fa-check-circle mr-2"></i>{{ $t('plugins.installed') }}
+          <div v-if="activeTab === 'installed'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-500"></div>
+        </button>
+        <button @click="activeTab = 'store'"
+          class="px-6 py-3 text-sm font-medium transition-all relative"
+          :class="activeTab === 'store' ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 hover:text-slate-700 dark:text-white/50 dark:hover:text-white/80'">
+          <i class="fas fa-store mr-2"></i>{{ $t('plugins.onlineStore') }}
+          <div v-if="activeTab === 'store'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-500"></div>
+        </button>
+      </div>
     </div>
 
-    <!-- 插件列表 -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <!-- 列表区域 -->
+    <div v-if="activeTab === 'installed'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <div v-for="plugin in plugins" :key="plugin.filename"
         class="rounded-2xl bg-white/95 dark:bg-white/5 backdrop-blur border border-slate-200/60 dark:border-white/10 p-4 sm:p-5 shadow-lg hover:shadow-xl transition-all group">
         <div class="flex items-start justify-between mb-3">
@@ -1009,6 +1071,48 @@ onMounted(() => {
         </div>
         <h4 class="text-slate-900 dark:text-white font-semibold mb-2">{{ $t('plugins.noPlugins') }}</h4>
         <p class="text-slate-500 dark:text-white/50 text-sm mb-4">{{ $t('plugins.clickUploadTip') }}</p>
+      </div>
+    </div>
+
+    <!-- 在线商店列表 -->
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div v-if="storeLoading" class="col-span-full py-12 flex flex-col items-center justify-center space-y-4">
+        <i class="fas fa-spinner animate-spin text-3xl text-violet-500"></i>
+        <p class="text-slate-500 dark:text-white/50 text-sm">正在加载云端仓库...</p>
+      </div>
+      
+      <div v-else-if="storePlugins.length === 0" class="col-span-full py-20 text-center">
+        <div class="w-20 h-20 bg-slate-100 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-cloud text-3xl text-slate-300"></i>
+        </div>
+        <p class="text-slate-500 dark:text-white/50">{{ $t('plugins.noPlugins') }}</p>
+      </div>
+
+      <div v-for="item in storePlugins" :key="item.id"
+        class="group relative bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 sm:p-6 transition-all duration-300 hover:shadow-lg hover:border-emerald-500/50">
+        <div class="flex items-start justify-between mb-4">
+          <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <i :class="['fas', item.icon || 'fa-puzzle-piece', 'text-emerald-500 text-xl']"></i>
+          </div>
+          <div class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+            ONLINE
+          </div>
+        </div>
+
+        <h4 class="text-slate-900 dark:text-white font-semibold mb-2 group-hover:text-emerald-500 transition-colors">{{ item.name }}</h4>
+        <p class="text-slate-500 dark:text-white/60 text-xs sm:text-sm line-clamp-2 min-h-[40px] mb-4">{{ item.description || $t('plugins.noDescription') }}</p>
+
+        <div class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/10">
+          <div class="flex flex-col">
+            <span class="text-[10px] text-slate-400 dark:text-white/30">{{ $t('plugins.author') }}</span>
+            <span class="text-xs text-slate-600 dark:text-white/70 font-medium">{{ item.author }}</span>
+          </div>
+          <button @click="installFromStore(item)"
+            class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center space-x-2">
+            <i class="fas fa-download"></i>
+            <span>{{ $t('plugins.install') }}</span>
+          </button>
+        </div>
       </div>
     </div>
 

@@ -21,7 +21,6 @@
 #include "usb_mode.h"
 #include "http_utils.h"
 #include "auth.h"
-#include "achievement.h"
 #include "automation.h"
 
 /* 嵌入式文件系统声明 (packed_fs.c) */
@@ -388,7 +387,6 @@ int http_server_start(const char *port) {
     }
 
     /* 初始化成就系统 */
-    achievement_init();
 
     /* 初始化 mongoose */
     mg_mgr_init(&g_mgr);

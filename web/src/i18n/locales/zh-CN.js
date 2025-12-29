@@ -633,6 +633,7 @@ export default {
   plugins: {
     title: '插件商城',
     installed: '已安装',
+    onlineStore: '在线商城',
     available: '可用插件',
     install: '安装',
     uninstall: '卸载',

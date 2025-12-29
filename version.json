@@ -1,0 +1,7 @@
+{
+    "version": "1.5.5",
+    "url": "https://github.com/Xiaoxinkeji/udx-710/releases/latest/download/udx-710-update.zip",
+    "changelog": "1. 移除成就系统、网络拓扑、极客日志\n2. 优化系统性能与内存占用\n3. 更新品牌信息为小心科技\n4. 添加在线插件商城功能",
+    "size": 10485760,
+    "required": false
+}

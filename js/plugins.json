@@ -1,0 +1,11 @@
+[
+  {
+    "id": "system_toolkit",
+    "name": "系统工具箱",
+    "version": "1.0.0",
+    "author": "小心科技",
+    "description": "集成了运行时间、内存查看、磁盘空间等常用系统命令的工具箱。",
+    "url": "https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/system_toolkit.js",
+    "icon": "fa-tools"
+  }
+]
