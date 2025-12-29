@@ -3,7 +3,7 @@
     "id": "system_toolkit",
     "name": "系统工具箱",
     "version": "1.0.0",
-    "author": "小心科技",
+    "author": "小新科技",
     "description": "集成了运行时间、内存查看、磁盘空间等常用系统命令的工具箱。",
     "url": "https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/system_toolkit.js",
     "icon": "fa-tools"
@@ -12,7 +12,7 @@
     "id": "network_info",
     "name": "网络详情",
     "version": "1.0.0",
-    "author": "小心科技",
+    "author": "小新科技",
     "description": "显示详细的网络连接信息，包括信号强度、频段、运营商等。",
     "url": "https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/network_info.js",
     "icon": "fa-broadcast-tower"
