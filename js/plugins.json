@@ -16,5 +16,14 @@
     "description": "显示详细的网络连接信息，包括信号强度、频段、运营商等。",
     "url": "https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/network_info.js",
     "icon": "fa-broadcast-tower"
+  },
+  {
+    "id": "ufi_dashboard",
+    "name": "UFI 数据看板",
+    "version": "1.0.0",
+    "author": "小心科技",
+    "description": "沉浸式全屏数据监控看板，展示信号、流量、硬件温度等详细信息。",
+    "url": "https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/ufi_dashboard.js",
+    "icon": "fa-desktop"
   }
 ]
