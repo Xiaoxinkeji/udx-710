@@ -508,7 +508,7 @@ onUnmounted(() => {
               v-show="!sidebarCollapsed || isMobile"
               class="font-medium transition-colors text-sm md:text-base text-slate-600 dark:text-white/60 group-hover:text-slate-900 dark:group-hover:text-white/80"
             >
-              小心科技
+              小新科技
             </span>
           </a>
         </div>
