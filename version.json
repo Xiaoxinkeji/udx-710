@@ -1,7 +1,7 @@
 {
-    "version": "3.0.2",
+    "version": "3.0.3",
     "url": "https://github.com/Xiaoxinkeji/udx-710/releases/latest/download/udx710-uools-bundle.zip",
-    "changelog": "1. 新增 UFI 数据看板插件，支持全屏沉浸式监控\n2. 修复插件商城下载失败的问题（添加 CDN 代理）\n3. 优化插件安装流程与体验",
+    "changelog": "1. 修复插件商城下载失败问题（添加镜像代理）\n2. 修复所有插件的语法错误\n3. 优化 UFI 数据看板性能\n4. 修复网络详情插件 API 调用",
     "size": 10485760,
     "required": false
 }
