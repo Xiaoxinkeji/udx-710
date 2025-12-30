@@ -269,6 +269,15 @@ static void http_handler(struct mg_connection *c, int ev, void *ev_data) {
         else if (mg_match(hm->uri, mg_str("/api/update/upload"), NULL)) {
             handle_update_upload(c, hm);
         }
+        else if (mg_match(hm->uri, mg_str("/api/plugins/market"), NULL)) {
+            handle_plugin_market_list(c, hm);
+        }
+        else if (mg_match(hm->uri, mg_str("/api/plugins/market/install"), NULL)) {
+            handle_plugin_market_install(c, hm);
+        }
+        else if (mg_match(hm->uri, mg_str("/api/plugins/market/mirror"), NULL)) {
+            handle_plugin_market_mirror(c, hm);
+        }
         else if (mg_match(hm->uri, mg_str("/api/update/download"), NULL)) {
             handle_update_download(c, hm);
         }

@@ -80,6 +80,11 @@ void handle_plugin_storage_get(struct mg_connection *c, struct mg_http_message *
 void handle_plugin_storage_set(struct mg_connection *c, struct mg_http_message *hm);
 void handle_plugin_storage_delete(struct mg_connection *c, struct mg_http_message *hm);
 
+/* 插件商城 API */
+void handle_plugin_market_list(struct mg_connection *c, struct mg_http_message *hm);
+void handle_plugin_market_install(struct mg_connection *c, struct mg_http_message *hm);
+void handle_plugin_market_mirror(struct mg_connection *c, struct mg_http_message *hm);
+
 /* 认证 API */
 void handle_auth_login(struct mg_connection *c, struct mg_http_message *hm);
 void handle_auth_logout(struct mg_connection *c, struct mg_http_message *hm);

@@ -49,10 +49,10 @@ static void set_error(const char *fmt, ...) {
 
 /* 释放所有代理 */
 static void clear_proxies(void) {
-    if (g_proxies.modem) g_object_unref(g_proxies.modem);
-    if (g_proxies.nw_reg) g_object_unref(g_proxies.nw_reg);
-    if (g_proxies.conn_mgr) g_object_unref(g_proxies.conn_mgr);
-    if (g_proxies.nw_mon) g_object_unref(g_proxies.nw_mon);
+    if (g_proxies.modem && G_IS_OBJECT(g_proxies.modem)) g_object_unref(g_proxies.modem);
+    if (g_proxies.nw_reg && G_IS_OBJECT(g_proxies.nw_reg)) g_object_unref(g_proxies.nw_reg);
+    if (g_proxies.conn_mgr && G_IS_OBJECT(g_proxies.conn_mgr)) g_object_unref(g_proxies.conn_mgr);
+    if (g_proxies.nw_mon && G_IS_OBJECT(g_proxies.nw_mon)) g_object_unref(g_proxies.nw_mon);
     memset(&g_proxies, 0, sizeof(g_proxies));
 }
 
@@ -105,7 +105,7 @@ static int ensure_connection(void) {
     }
 
     /* 如果连接断开，先清理旧的 */
-    if (g_dbus_conn) {
+    if (g_dbus_conn && G_IS_OBJECT(g_dbus_conn)) {
         g_object_unref(g_dbus_conn);
         g_dbus_conn = NULL;
     }
@@ -144,7 +144,7 @@ int init_dbus(void) {
 
 void close_dbus(void) {
     clear_proxies();
-    if (g_dbus_conn) {
+    if (g_dbus_conn && G_IS_OBJECT(g_dbus_conn)) {
         g_object_unref(g_dbus_conn);
         g_dbus_conn = NULL;
     }
@@ -262,7 +262,7 @@ int ofono_is_initialized(void) {
 }
 
 void ofono_deinit(void) {
-    if (g_dbus_conn) {
+    if (g_dbus_conn && G_IS_OBJECT(g_dbus_conn)) {
         g_object_unref(g_dbus_conn);
         g_dbus_conn = NULL;
     }
@@ -316,7 +316,7 @@ int ofono_network_get_mode_sync(const char* modem_path, char* buffer, int size, 
     }
 
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
     return ret;
 }
 
@@ -412,12 +412,12 @@ int ofono_network_set_mode_sync(const char* modem_path, int mode, int timeout_ms
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
+        if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         return -4;
     }
 
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
     return 0;
 }
 
@@ -449,12 +449,12 @@ int ofono_modem_set_online(const char* modem_path, int online, int timeout_ms) {
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
+        if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         return -3;
     }
 
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
     return 0;
 }
 
@@ -530,7 +530,7 @@ int ofono_network_get_signal_strength(const char* modem_path, int* strength, int
     }
 
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
     return ret;
 }
 
@@ -583,7 +583,7 @@ static int find_internet_context_path(char *path_buf, size_t buf_size) {
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
+        if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         strncpy(path_buf, DEFAULT_CONTEXT_PATH, buf_size - 1);
         return 0;
     }
@@ -637,7 +637,7 @@ static int find_internet_context_path(char *path_buf, size_t buf_size) {
 
     g_variant_unref(array);
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
 
     /* 如果没找到配置了 APN 的，使用第一个 internet context */
     if (!found) {
@@ -685,7 +685,7 @@ int ofono_get_data_status(int *active) {
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
+        if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         return -3;
     }
 
@@ -707,7 +707,7 @@ int ofono_get_data_status(int *active) {
     }
 
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
     return ret;
 }
 
@@ -745,12 +745,12 @@ int ofono_set_data_status(int active) {
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
+        if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         return -3;
     }
 
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
     return 0;
 }
 
@@ -806,7 +806,8 @@ int ofono_get_roaming_status(int *roaming_allowed, int *is_roaming) {
         if (error) { g_error_free(error); error = NULL; }
     }
 
-    g_object_unref(proxy);
+
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
 
     /* 2. 获取 NetworkRegistration 的 Status 属性判断是否漫游中 */
     proxy = g_dbus_proxy_new_sync(
@@ -849,7 +850,8 @@ int ofono_get_roaming_status(int *roaming_allowed, int *is_roaming) {
         if (error) g_error_free(error);
     }
 
-    g_object_unref(proxy);
+
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
     return ret;
 }
 
@@ -881,12 +883,12 @@ int ofono_set_roaming_allowed(int allowed) {
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
+        if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         return -3;
     }
 
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
     return 0;
 }
 
@@ -923,7 +925,7 @@ int ofono_get_all_apn_contexts(ApnContext *contexts, int max_count) {
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
+        if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         return -3;
     }
 
@@ -991,7 +993,7 @@ int ofono_get_all_apn_contexts(ApnContext *contexts, int max_count) {
 
     g_variant_unref(array);
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
 
     return count;
 }
@@ -1024,12 +1026,12 @@ int ofono_set_apn_property(const char *context_path, const char *property, const
 
     if (!result) {
         if (error) g_error_free(error);
-        g_object_unref(proxy);
+        if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         return -3;
     }
 
     g_variant_unref(result);
-    g_object_unref(proxy);
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
     return 0;
 }
 
@@ -1078,7 +1080,8 @@ int ofono_set_apn_properties(const char *context_path,
         if (error) { g_error_free(error); error = NULL; }
     }
 
-    g_object_unref(proxy);
+
+    if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
 
     /* 2. 如果激活中，先关闭 */
     if (was_active) {
@@ -1095,7 +1098,7 @@ int ofono_set_apn_properties(const char *context_path,
             );
             if (result) g_variant_unref(result);
             if (error) { g_error_free(error); error = NULL; }
-            g_object_unref(proxy);
+            if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         }
         /* 等待状态稳定 */
         g_usleep(500000); /* 500ms */
@@ -1134,7 +1137,7 @@ int ofono_set_apn_properties(const char *context_path,
             );
             if (result) g_variant_unref(result);
             if (error) g_error_free(error);
-            g_object_unref(proxy);
+            if (proxy && G_IS_OBJECT(proxy)) g_object_unref(proxy);
         }
     }
 

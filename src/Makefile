@@ -35,7 +35,7 @@ OBJS = $(BUILD_DIR)/main.o $(BUILD_DIR)/mongoose.o $(BUILD_DIR)/packed_fs.o \
        $(BUILD_DIR)/charge.o $(BUILD_DIR)/sms.o $(BUILD_DIR)/update.o $(BUILD_DIR)/usb_mode.o \
        $(BUILD_DIR)/plugin.o $(BUILD_DIR)/plugin_storage.o \
        $(BUILD_DIR)/sha256.o $(BUILD_DIR)/auth.o $(BUILD_DIR)/database.o \
-       $(BUILD_DIR)/automation.o
+       $(BUILD_DIR)/automation.o $(BUILD_DIR)/plugin_market.o $(BUILD_DIR)/plugin_market_handler.o
 
 .PHONY: all clean
 
@@ -117,6 +117,12 @@ $(BUILD_DIR)/database.o: system/database.c | $(BUILD_DIR)
 
 
 $(BUILD_DIR)/automation.o: system/automation.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+$(BUILD_DIR)/plugin_market.o: system/plugin_market.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+$(BUILD_DIR)/plugin_market_handler.o: handlers/plugin_market_handler.c | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 $(BUILD_DIR):
