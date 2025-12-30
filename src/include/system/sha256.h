@@ -62,6 +62,15 @@ void sha256_hash_string(const char *str, char *hex_out);
  */
 void sha256_hash_data(const uint8_t *data, size_t len, char *hex_out);
 
+/**
+ * 便捷函数：计算文件的SHA256哈希并输出hex字符串
+ * @param path 文件路径
+ * @param hex_out 输出缓冲区（至少65字节）
+ * @param hex_size 缓冲区大小
+ * @return 0 成功，-1 失败
+ */
+int sha256_file(const char *path, char *hex_out, size_t hex_size);
+
 #ifdef __cplusplus
 }
 #endif

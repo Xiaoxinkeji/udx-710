@@ -71,14 +71,15 @@ jobs:
         with:
           files: udx710-uools-bundle.zip
           body: |
-            ## 🚀 UDX710: 小新科技 v3.0.2 (Hotfix)
+            ## 🚀 UDX710: 小新科技 v3.0.4 (Hotfix)
 
             ### 📝 更新日志 (Changelog)
-            - **品牌修正**: 修正了所有的品牌名称显示为“小新科技”。
-            - **UFI 数据看板**: 新增全屏数据监控插件，支持实时刷新与硬件状态显示。
+            - **GLib 断言**: 修复运行时 `(process:xxxx): GLib-GObject-CRITICAL **: g_object_unref: assertion 'G_IS_OBJECT (object)' failed` 警告
+            - **插件商城**: 新增独立 `/api/plugins/market/*` 接口，支持远程列表、镜像配置、SHA256 校验、自动解压安装
+            - **镜像源**: 支持自定义镜像地址，解决 GitHub 访问失败导致的插件下载/运行问题
 
             ### 🐛 问题修复 (Fixed)
-            - **下载修复**: 修复了插件商城因跨域导致的下载失败问题（已集成 CDN 代理）。
+            - **下载失败**: 插件商城因网络/跨域无法下载、安装后无法运行
 
             ---
             *注：适用于 UDX710 平台所有通用设备。默认端口：9898。*

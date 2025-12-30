@@ -173,3 +173,33 @@ void sha256_hash_string(const char *str, char *hex_out)
 {
     sha256_hash_data((const uint8_t *)str, strlen(str), hex_out);
 }
+
+int sha256_file(const char *path, char *hex_out, size_t hex_size)
+{
+    if (!path || !hex_out || hex_size < SHA256_HEX_SIZE) return -1;
+
+    FILE *fp = fopen(path, "rb");
+    if (!fp) return -1;
+
+    SHA256_CTX ctx;
+    uint8_t hash[SHA256_BLOCK_SIZE];
+    uint8_t buffer[4096];
+    size_t n;
+
+    sha256_init(&ctx);
+    while ((n = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
+        sha256_update(&ctx, buffer, n);
+    }
+    if (ferror(fp)) {
+        fclose(fp);
+        return -1;
+    }
+    fclose(fp);
+
+    sha256_final(&ctx, hash);
+    for (int i = 0; i < SHA256_BLOCK_SIZE; i++) {
+        sprintf(hex_out + (i * 2), "%02x", hash[i]);
+    }
+    hex_out[SHA256_HEX_SIZE - 1] = '\0';
+    return 0;
+}

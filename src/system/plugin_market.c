@@ -11,6 +11,7 @@
 #include "plugin_market.h"
 #include "exec_utils.h"
 #include "sha256.h"
+#include "plugin.h"          /* 提供 PLUGIN_DIR */
 
 #define MARKET_LIST_URL_DEFAULT  "https://raw.githubusercontent.com/Xiaoxinkeji/udx-710-plugins/main/index.json"
 #define MARKET_TMP_JSON          "/tmp/plugin_market_index.json"
@@ -71,7 +72,7 @@ int plugin_market_fetch_list(char *json_buffer, size_t size) {
     json_buffer[len] = '\0';
     fclose(fp);
     unlink(MARKET_TMP_JSON);
-    return 0FP);
+    return 0;
 }
 
 /* 下载并安装插件 */
@@ -114,7 +115,7 @@ int plugin_market_install(const char *plugin_name, const char *expected_sha256) 
 
     /* 移动 *.js 到插件目录 */
     char mv_cmd[1024];
-    snprintf(mv_cmd, sizeof(mv_cmd), "mv %s/*.js " PLUGIN_DIR "/", MARKET_TMP_DIR);
+    snprintf(mv_cmd, sizeof(mv_cmd), "mv %s/*.js \"%s\"", MARKET_TMP_DIR, PLUGIN_DIR);
     int ret = system(mv_cmd) == 0 ? 0 : -5;
 
     /* 清理 */
