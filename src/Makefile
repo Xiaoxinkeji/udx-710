@@ -12,7 +12,7 @@ INCLUDES = -I$(GLIB_DIR)/include/glib-2.0 \
            -I. -Isystem -Iinclude -Iinclude/system -Iinclude/handlers -Iinclude/lib
 
 LDFLAGS = -L$(GLIB_DIR)/lib -Wl,-rpath-link,$(GLIB_DIR)/lib -Wl,--allow-shlib-undefined
-LIBS = -lgio-2.0 -lgobject-2.0 -lglib-2.0 -lgmodule-2.0 -lpthread
+LIBS = -lgio-2.0 -lgobject-2.0 -lglib-2.0 -lgmodule-2.0 -lpthread -lsqlite3
 
 BUILD_DIR = build
 TARGET = $(BUILD_DIR)/ofono-server

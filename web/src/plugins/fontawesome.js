@@ -7,7 +7,7 @@ import { library, dom } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
 // 导入 Brands 图标 (fab 前缀)
-import { faQq, faGithub, faUsb } from '@fortawesome/free-brands-svg-icons'
+import { faGithub, faUsb } from '@fortawesome/free-brands-svg-icons'
 
 // 导入项目使用的所有图标
 import {
@@ -25,7 +25,7 @@ import {
   faChevronRight,
   faBars,
   faSyncAlt,
-  
+
   // SystemMonitor.vue
   faSatelliteDish,
   faBroadcastTower,
@@ -54,11 +54,11 @@ import {
   faInfoCircle,
   faDesktop,
   faCodeBranch,
-  
+
   // NetworkManager.vue
   faPlane,
   faCheckCircle,
-  
+
   // WifiManager.vue
   faCog,
   faPowerOff,
@@ -73,14 +73,14 @@ import {
   faTowerBroadcast,
   faShield,
   faCircleInfo,
-  
+
   // TrafficStats.vue
   faChartPie,
   faArrowTrendUp,
   faToggleOn,
   faTrash,
   faLightbulb,
-  
+
   // BatteryManager.vue
   faHeart,
   faBalanceScale,
@@ -93,7 +93,7 @@ import {
   faSkull,
   faSnowflake,
   faQuestion,
-  
+
   // AdvancedNetwork.vue
   faLock,
   faUnlock,
@@ -102,21 +102,21 @@ import {
   faSpinner,
   faStar,
   faExclamationTriangle,
-  
+
   // ATDebug.vue
   faPaperPlane,
   faCode,
   faHistory,
-  
+
   // SystemSettings.vue
   faCalendarAlt,
   faSignOutAlt,
   faSignInAlt,
-  
+
   // 主题切换图标
   faSun,
   faMoon,
-  
+
   // DeviceManager.vue
   faLaptop,
   faBan,
@@ -126,42 +126,42 @@ import {
   faChevronUp,
   faChevronDown,
   faExclamationCircle,
-  
+
   // WifiManager.vue 补充
   faCopy,
   faEye,
   faEyeSlash,
-  
+
   // SmsManager.vue 补充
   faShareNodes,
   faGear,
   faUser,
   faBell,
-  
+
   // SystemUpdate.vue
   faCloudDownloadAlt,
   faCloudUploadAlt,
   faRocket,
   faFileArchive,
   faLink,
-  
+
   // SystemSettings.vue 恢复出厂设置
   faRotateLeft,
-  
+
   // GlobalConfirm.vue
   faQuestionCircle,
-  
+
   // SmsManager.vue 配置页面
   faWrench,
-  
+
   // WebTerminal.vue
   faExternalLinkAlt,
   faExpand,
   faCompress,
-  
+
   // NetworkManager.vue 漫游图标
   faGlobe,
-  
+
   // PluginStore.vue 插件商城
   faPuzzlePiece,
   faPlus,
@@ -177,7 +177,7 @@ import {
   faFolder,
   faDatabase,
   faSearch,
-  
+
   // ApnConfig.vue 运营商图标
   faMobileAlt
 } from '@fortawesome/free-solid-svg-icons'
@@ -224,7 +224,6 @@ library.add(
   faInfoCircle,
   faDesktop,
   faCodeBranch,
-  faQq,
   faGithub,
   faPlane,
   faCheckCircle,

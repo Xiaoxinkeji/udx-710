@@ -88,10 +88,58 @@ function formatBandValue(value) {
   return value ?? 'N/A'
 }
 
+// 运营商名称映射
+const carrierMap = {
+  'CHINAMOBILE': '中国移动',
+  'CHINA UNICOM': '中国联通',
+  'CHINATELECOM': '中国电信',
+  'CMCC': '中国移动',
+  'CUCC': '中国联通',
+  'CTCC': '中国电信'
+}
+
+function formatCarrier(value) {
+  if (!value || value === 'N/A') return 'N/A'
+  const upperValue = value.toUpperCase()
+  for (const key in carrierMap) {
+    if (upperValue.includes(key)) return carrierMap[key]
+  }
+  return value
+}
+
 // 格式化系统信息值（无网络时显示N/A，用于Modem信息板块）
 function formatSystemValue(value) {
-  if (!hasNetwork.value) return 'N/A'
+  if (!value || value === 0 || value === '0') return 'N/A'
   return value ?? 'N/A'
+}
+
+const powerMap = {
+  'Discharging': '正在放电',
+  'Charging': '正在充电',
+  'Full': '已充满',
+  'Not charging': '未在充电'
+}
+
+const healthMap = {
+  'Good': '良好',
+  'Overheat': '过热',
+  'Dead': '损害',
+  'Over voltage': '过压',
+  'Unspecified failure': '未知故障',
+  'Cold': '过冷',
+  'Excellent': '优秀',
+  'Fair': '一般',
+  'Poor': '较差'
+}
+
+function formatPowerStatus(value) {
+  if (!value || value === 'N/A' || value === '-') return '-'
+  return powerMap[value] || value
+}
+
+function formatBatteryHealth(value) {
+  if (!value || value === 'N/A' || value === '-') return '-'
+  return healthMap[value] || value
 }
 
 // 计算运行时间
@@ -472,7 +520,7 @@ async function handleClearCache() {
           <div class="space-y-3">
             <div class="group p-3 bg-slate-100 dark:bg-white/5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all flex justify-between items-center">
               <span class="text-slate-600 dark:text-white/60 text-sm"><i class="fas fa-building mr-2 text-purple-400"></i>{{ t('monitor.carrier') }}</span>
-              <span class="text-slate-900 dark:text-white font-bold">{{ systemInfo?.carrier || 'N/A' }}</span>
+              <span class="text-slate-900 dark:text-white font-bold">{{ formatCarrier(systemInfo?.carrier) }}</span>
             </div>
             <div class="group p-3 bg-slate-100 dark:bg-white/5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all flex justify-between items-center">
               <span class="text-slate-600 dark:text-white/60 text-sm"><i class="fas fa-signal mr-2 text-cyan-400"></i>{{ t('monitor.signalStrength') }}</span>
@@ -552,7 +600,7 @@ async function handleClearCache() {
             </div>
             <p class="text-slate-600 dark:text-white/50 text-[10px] sm:text-xs mb-0.5">{{ t('monitor.power') }}</p>
             <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">
-              {{ systemInfo?.power_status || '-' }}
+              {{ formatPowerStatus(systemInfo?.power_status) }}
               <span>{{ systemInfo?.power_status?.includes('Charging') ? '⚡' : '🔌' }}</span>
             </p>
           </div>
@@ -566,8 +614,8 @@ async function handleClearCache() {
             </div>
             <p class="text-slate-600 dark:text-white/50 text-[10px] sm:text-xs mb-0.5">{{ t('monitor.batteryHealth') }}</p>
             <p class="text-slate-800 dark:text-white font-bold text-base sm:text-lg md:text-xl">
-              {{ systemInfo?.battery_health || '-' }}
-              <span>{{ systemInfo?.battery_health === 'Good' ? '✅' : '⚠️' }}</span>
+              {{ formatBatteryHealth(systemInfo?.battery_health) }}
+              <span>{{ systemInfo?.battery_health === 'Good' || systemInfo?.battery_health === 'Excellent' ? '✅' : '⚠️' }}</span>
             </p>
           </div>
         </div>
@@ -623,17 +671,6 @@ async function handleClearCache() {
           </div>
         </div>
         
-        <div class="group p-4 bg-slate-100 dark:bg-white/5 rounded-2xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/20">
-          <div class="flex items-center space-x-4">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
-              <i class="fab fa-qq text-white"></i>
-            </div>
-            <div>
-              <p class="text-slate-600 dark:text-white/50 text-xs">{{ t('monitor.qqGroup') }}</p>
-              <p class="text-slate-800 dark:text-white font-mono text-sm">1029148488</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>

@@ -90,8 +90,12 @@ static void http_handler(struct mg_connection *c, int ev, void *ev_data) {
             }
         }
 
-        /* WebSocket 升级处理 */
+        /* WebSocket 升级处理 - 需要验证 Token */
         if (mg_match(hm->uri, mg_str("/api/ws/log"), NULL)) {
+            if (verify_request_token(hm) != 0) {
+                HTTP_JSON(c, 401, "{\"status\":\"error\",\"message\":\"未授权\"}");
+                return;
+            }
             mg_ws_upgrade(c, hm, NULL);
             return;
         }

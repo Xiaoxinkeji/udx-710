@@ -195,14 +195,34 @@ int auth_verify_token(const char *token)
     
     now = (long long)time(NULL);
     
-    /* 查询Token是否存在且未过期 */
-    snprintf(sql, sizeof(sql),
-        "SELECT COUNT(*) FROM auth_tokens WHERE token='%s' AND expire_time > %lld;",
-        token, now);
+    /* 使用参数化查询防止 SQL 注入 */
+    sqlite3_stmt *stmt;
+    const char *sql = "SELECT COUNT(*) FROM auth_tokens WHERE token = ? AND expire_time > ?;";
     
-    count = db_query_int(sql, 0);
+    extern sqlite3 *g_db; /* 从 database.c 引用 */
+    extern pthread_mutex_t g_db_mutex;
+
+    pthread_mutex_lock(&g_db_mutex);
+    int rc = sqlite3_prepare_v2(g_db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        pthread_mutex_unlock(&g_db_mutex);
+        return -1;
+    }
     
-    if (count > 0) {
+    sqlite3_bind_text(stmt, 1, token, -1, SQLITE_STATIC);
+    sqlite3_bind_int64(stmt, 2, now);
+    
+    int valid = 0;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        if (sqlite3_column_int(stmt, 0) > 0) {
+            valid = 1;
+        }
+    }
+    
+    sqlite3_finalize(stmt);
+    pthread_mutex_unlock(&g_db_mutex);
+    
+    if (valid) {
         return 0;  /* Token有效 */
     }
     
@@ -256,13 +276,24 @@ int auth_logout(const char *token)
         return -1;
     }
     
-    /* 只删除指定Token，不影响其他设备 */
-    snprintf(sql, sizeof(sql),
-        "DELETE FROM auth_tokens WHERE token='%s';", token);
+    /* 使用参数化查询防止 SQL 注入 */
+    sqlite3_stmt *stmt;
+    const char *sql = "DELETE FROM auth_tokens WHERE token = ?;";
     
-    if (db_execute_safe(sql) != 0) {
+    extern sqlite3 *g_db;
+    extern pthread_mutex_t g_db_mutex;
+
+    pthread_mutex_lock(&g_db_mutex);
+    int rc = sqlite3_prepare_v2(g_db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        pthread_mutex_unlock(&g_db_mutex);
         return -1;
     }
+    
+    sqlite3_bind_text(stmt, 1, token, -1, SQLITE_STATIC);
+    sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+    pthread_mutex_unlock(&g_db_mutex);
     
     printf("[AUTH] 登出成功\n");
     return 0;

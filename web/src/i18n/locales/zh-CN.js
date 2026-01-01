@@ -114,7 +114,12 @@ export default {
     kernelVersion: '内核版本',
     cacheCleared: '缓存清除成功',
     cacheClearFailed: '清除失败',
-    confirmClearCache: '确定要清除系统缓存吗？'
+    confirmClearCache: '确定要清除系统缓存吗？',
+    systemStatus: '系统运行状态',
+    power: '电源状态',
+    batteryHealth: '电池健康度',
+    batteryCapacity: '电池容量',
+    qqGroup: '社区讨论'
   },
 
   // 网络管理模块

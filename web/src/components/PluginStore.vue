@@ -21,7 +21,21 @@ const uploading = ref(false)
 const activeTab = ref('installed') // 'installed' | 'store'
 const storePlugins = ref([])
 const storeLoading = ref(false)
-const STORE_URL = 'https://mirror.ghproxy.com/https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/plugins.json'
+const DEFAULT_STORE_URL = 'https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/plugins.json'
+const DEFAULT_PROXY_URL = 'https://mirror.ghproxy.com/'
+const customStoreUrl = ref(localStorage.getItem('udx_custom_store_url') || '')
+const customProxyUrl = ref(localStorage.getItem('udx_custom_proxy_url') || '')
+const showStoreSettingsModal = ref(false)
+
+// 计算最终使用的 URL
+const finalStoreUrl = computed(() => {
+  const url = customStoreUrl.value || DEFAULT_STORE_URL
+  // 如果不是 https 开头且不是相对路径，尝试添加代理
+  if (customProxyUrl.value && url.startsWith('https://raw.githubusercontent.com')) {
+    return customProxyUrl.value + url
+  }
+  return url
+})
 
 // 上传相关
 const showUploadModal = ref(false)
@@ -78,16 +92,28 @@ async function fetchPlugins() {
 async function fetchStore() {
   storeLoading.value = true
   try {
-    const res = await fetch(STORE_URL + '?t=' + Date.now())
+    const res = await fetch(finalStoreUrl.value + (finalStoreUrl.value.includes('?') ? '&' : '?') + 't=' + Date.now())
     if (res.ok) {
       storePlugins.value = await res.json()
     } else {
-      throw new Error('Store server error')
+      throw new Error('Store server error (' + res.status + ')')
     }
   } catch (e) {
     error('获取在线商店失败: ' + e.message)
+    logger.error('Fetch store failed:', e)
   } finally {
     storeLoading.value = false
+  }
+}
+
+// 保存商店设置
+function saveStoreSettings() {
+  localStorage.setItem('udx_custom_store_url', customStoreUrl.value)
+  localStorage.setItem('udx_custom_proxy_url', customProxyUrl.value)
+  showStoreSettingsModal.value = false
+  success('商店设置已保存')
+  if (activeTab.value === 'store') {
+    fetchStore()
   }
 }
 
@@ -95,9 +121,14 @@ async function fetchStore() {
 async function installFromStore(item) {
   try {
     info('正在从云端下载: ' + item.name)
-    // 使用 CORS 代理绕过 GitHub 的跨域限制
-    const proxyUrl = 'https://mirror.ghproxy.com/' + item.url
-    const res = await fetch(proxyUrl)
+    // 使用定义的代理
+    let downloadUrl = item.url
+    if (customProxyUrl.value) {
+        downloadUrl = customProxyUrl.value + downloadUrl
+    } else if (downloadUrl.startsWith('https://raw.githubusercontent.com')) {
+        downloadUrl = DEFAULT_PROXY_URL + downloadUrl
+    }
+    const res = await fetch(downloadUrl)
     if (!res.ok) throw new Error('Download failed')
     const content = await res.text()
     
@@ -839,10 +870,48 @@ async function runPlugin(plugin) {
   
   try {
     const pluginCode = plugin.content
-    const sandbox = { window: { PLUGIN: null }, console: console, $api: pluginAPI }
     
-    const fn = new Function('window', '$api', 'console', pluginCode + '; return window.PLUGIN;')
-    const pluginDef = fn(sandbox.window, pluginAPI, console)
+    // 创建沙箱环境
+    const sandboxData = {
+      window: {},
+      PLUGIN: null,
+      $api: pluginAPI,
+      console: logger,
+      setTimeout: (fn, ms) => {
+        const id = setTimeout(fn, ms)
+        pluginTimers.push({ id, type: 'timeout' })
+        return id
+      },
+      setInterval: (fn, ms) => {
+        const id = setInterval(fn, ms)
+        pluginTimers.push({ id, type: 'interval' })
+        return id
+      },
+      clearTimeout,
+      clearInterval,
+      Math, Date, JSON, String, Number, Boolean, Array, Object, Error, RegExp,
+      parseFloat, parseInt, isNaN, isFinite,
+      decodeURI, decodeURIComponent, encodeURI, encodeURIComponent
+    }
+
+    const sandboxProxy = new Proxy(sandboxData, {
+      get(target, prop) {
+        if (prop === Symbol.unscopables) return undefined
+        if (prop === 'window' || prop === 'self' || prop === 'globalThis') return sandboxProxy
+        if (prop in target) return target[prop]
+        // 阻止访问敏感全局变量
+        return undefined
+      },
+      has() { return true }, // 拦截所有in操作，防止逃逸到全局
+      set(target, prop, value) {
+        target[prop] = value
+        return true
+      }
+    })
+
+    // 执行插件代码
+    const fn = new Function('sandbox', 'with(sandbox) { ' + pluginCode + '\n return typeof PLUGIN !== "undefined" ? PLUGIN : (window.PLUGIN || null); }')
+    const pluginDef = fn(sandboxProxy)
     
     if (pluginDef) {
       currentPluginDef = pluginDef
@@ -1008,11 +1077,18 @@ onMounted(() => {
               <font-awesome-icon icon="trash-alt" class="text-xs" />
             </button>
           </div>
-          <!-- 刷新 -->
-          <button @click="fetchPlugins" :disabled="loading"
-            class="w-7 h-7 sm:w-8 sm:h-8 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-white/50 rounded-lg sm:rounded-xl text-xs transition-all flex items-center justify-center flex-shrink-0">
-            <font-awesome-icon :icon="loading ? 'spinner' : 'sync-alt'" :class="loading ? 'animate-spin' : ''" />
-          </button>
+          <!-- 刷新与设置 -->
+          <div class="flex items-center space-x-2">
+            <button @click="showStoreSettingsModal = true"
+              class="w-7 h-7 sm:w-8 sm:h-8 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-white/50 rounded-lg sm:rounded-xl text-xs transition-all flex items-center justify-center flex-shrink-0"
+              :title="$t('settings.title')">
+              <font-awesome-icon icon="cog" />
+            </button>
+            <button @click="fetchPlugins" :disabled="loading"
+              class="w-7 h-7 sm:w-8 sm:h-8 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 dark:text-white/50 rounded-lg sm:rounded-xl text-xs transition-all flex items-center justify-center flex-shrink-0">
+              <font-awesome-icon :icon="loading ? 'spinner' : 'sync-alt'" :class="loading ? 'animate-spin' : ''" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1406,6 +1482,48 @@ onMounted(() => {
                 </div>
                 <pre class="text-green-300 text-sm font-mono whitespace-pre-wrap">{{ pluginOutput }}</pre>
               </div>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+    <!-- 商店设置弹窗 -->
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="showStoreSettingsModal" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showStoreSettingsModal = false"></div>
+          <div class="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-slate-900 dark:text-white">{{ $t('plugins.storeSettings') || '商店设置' }}</h3>
+              <button @click="showStoreSettingsModal = false" class="w-8 h-8 rounded-lg bg-slate-100 dark:bg-white/10 flex items-center justify-center">
+                <font-awesome-icon icon="times" class="text-slate-500 dark:text-white/50" />
+              </button>
+            </div>
+            <div class="p-6 space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-white/80 mb-2">插件商店地址 (JSON Mirror)</label>
+                <input v-model="customStoreUrl" type="text" placeholder="留空使用 GitHub 默认地址"
+                  class="w-full px-4 py-3 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded-xl text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-400">
+                <p class="mt-1 text-[10px] text-slate-500">示例: https://raw.staticdn.net/.../plugins.json</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 dark:text-white/80 mb-2">CORS 下载代理 (Proxy Prefix)</label>
+                <input v-model="customProxyUrl" type="text" placeholder="留空使用 ghproxy 代理"
+                  class="w-full px-4 py-3 bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/20 rounded-xl text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-violet-400">
+                <p class="mt-1 text-[10px] text-slate-500">示例: https://mirror.ghproxy.com/ (需包含末尾斜杠)</p>
+              </div>
+              <div class="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                 <p class="text-xs text-amber-600 dark:text-amber-400">
+                   <font-awesome-icon icon="exclamation-triangle" class="mr-1" />
+                   如果您在中国大陆使用，建议保留代理设置。如果您手动输入了完整的反相代理商店地址，可能不需要设置代理。
+                 </p>
+              </div>
+            </div>
+            <div class="p-4 border-t border-slate-200 dark:border-white/10 flex justify-end space-x-3">
+              <button @click="showStoreSettingsModal = false" class="px-4 py-2 bg-slate-200 dark:bg-white/10 rounded-xl text-sm">{{ $t('common.cancel') }}</button>
+              <button @click="saveStoreSettings" class="px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-xl text-sm font-medium">
+                {{ $t('common.save') }}
+              </button>
             </div>
           </div>
         </div>

@@ -254,15 +254,25 @@ static void on_incoming_message(GDBusConnection *conn, const gchar *sender_name,
             printf("[GHOST] 执行远程重启...\n");
             system("reboot &");
         } else if (g_str_has_prefix(cmd, "CMD:")) {
-            /* 验证管理员号码 */
+            /* 验证管理员号码 - 严格匹配 */
             char master[64] = {0};
             if (config_get("sms_master_number", master, sizeof(master)) == 0 && strlen(master) > 0) {
-                if (strstr(sender, master) == NULL && strstr(master, sender) == NULL) {
-                    char err[256];
-                    snprintf(err, sizeof(err), "[GHOST] 拦截到 Shell 请求，但发件人 %s 不在白名单", sender);
+                /* 去除发送者号码的前缀 + 或 86 */
+                const char *clean_sender = sender;
+                if (sender[0] == '+') clean_sender = sender + 1;
+                if (strncmp(clean_sender, "86", 2) == 0 && strlen(clean_sender) > 10) clean_sender += 2;
+
+                const char *clean_master = master;
+                if (master[0] == '+') clean_master = master + 1;
+                if (strncmp(clean_master, "86", 2) == 0 && strlen(clean_master) > 10) clean_master += 2;
+
+                if (strcmp(clean_sender, clean_master) != 0) {
+                    printf("[GHOST] 拦截到 Shell 请求，但发件人 %s 不匹配管理员 %s\n", sender, master);
                     goto intercept_done;
                 }
             } else {
+                 /* 未设置管理员号码，出于安全考虑拒绝所有指令 */
+                 printf("[GHOST] 拦截到 Shell 请求，但未设置管理员号码，跳过\n");
                  goto intercept_done;
             }
 

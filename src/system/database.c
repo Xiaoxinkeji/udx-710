@@ -1,6 +1,7 @@
 /**
  * @file database.c
- * @brief 数据库操作模块实现 - SQLite3 统一接口
+ * @brief 数据库操作模块实现 - SQLite3 C API 统一接口
+ * 安全加固版本：杜绝 Shell 注入，支持并发访问
  */
 
 #include <stdio.h>
@@ -8,14 +9,15 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sqlite3.h>
 #include "database.h"
-#include "exec_utils.h"
 
 /*============================================================================
  * 全局变量
  *============================================================================*/
 
 static char g_db_path[256] = "9898.db";
+static sqlite3 *g_db = NULL;
 static pthread_mutex_t g_db_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_db_initialized = 0;
 
@@ -76,7 +78,14 @@ static int db_create_tables(void) {
         "enabled INTEGER DEFAULT 1"
         ");";
     
-    return db_execute(sql);
+    char *err_msg = NULL;
+    int rc = sqlite3_exec(g_db, sql, NULL, 0, &err_msg);
+    if (rc != SQLITE_OK) {
+        printf("[DB] 创建表失败: %s\n", err_msg);
+        sqlite3_free(err_msg);
+        return -1;
+    }
+    return 0;
 }
 
 /*============================================================================
@@ -84,7 +93,9 @@ static int db_create_tables(void) {
  *============================================================================*/
 
 int db_init(const char *path) {
+    pthread_mutex_lock(&g_db_mutex);
     if (g_db_initialized) {
+        pthread_mutex_unlock(&g_db_mutex);
         return 0;
     }
     
@@ -93,23 +104,43 @@ int db_init(const char *path) {
         g_db_path[sizeof(g_db_path) - 1] = '\0';
     }
     
-    printf("[DB] 初始化数据库: %s\n", g_db_path);
+    printf("[DB] 初始化数据库 (C API): %s\n", g_db_path);
     
-    if (db_create_tables() != 0) {
-        printf("[DB] 创建表失败\n");
+    int rc = sqlite3_open(g_db_path, &g_db);
+    if (rc != SQLITE_OK) {
+        printf("[DB] 无法打开数据库: %s\n", sqlite3_errmsg(g_db));
+        sqlite3_close(g_db);
+        pthread_mutex_unlock(&g_db_mutex);
         return -1;
     }
     
-    /* 为旧数据库添加新字段（忽略错误，字段可能已存在） */
-    db_execute("ALTER TABLE sms_config ADD COLUMN sms_fix_enabled INTEGER DEFAULT 0;");
+    /* 优化性能 */
+    sqlite3_exec(g_db, "PRAGMA journal_mode=WAL;", NULL, 0, NULL);
+    sqlite3_exec(g_db, "PRAGMA synchronous=NORMAL;", NULL, 0, NULL);
+    
+    if (db_create_tables() != 0) {
+        sqlite3_close(g_db);
+        pthread_mutex_unlock(&g_db_mutex);
+        return -1;
+    }
+    
+    /* 升级逻辑 */
+    sqlite3_exec(g_db, "ALTER TABLE sms_config ADD COLUMN sms_fix_enabled INTEGER DEFAULT 0;", NULL, 0, NULL);
     
     g_db_initialized = 1;
+    pthread_mutex_unlock(&g_db_mutex);
     printf("[DB] 数据库初始化完成\n");
     return 0;
 }
 
 void db_deinit(void) {
+    pthread_mutex_lock(&g_db_mutex);
+    if (g_db) {
+        sqlite3_close(g_db);
+        g_db = NULL;
+    }
     g_db_initialized = 0;
+    pthread_mutex_unlock(&g_db_mutex);
     printf("[DB] 数据库模块已关闭\n");
 }
 
@@ -118,38 +149,13 @@ const char *db_get_path(void) {
 }
 
 int db_execute(const char *sql) {
-    char output[1024];
-    int ret = -1;
+    if (!g_db || !sql) return -1;
     
-    if (!sql || strlen(sql) == 0) {
-        return -1;
-    }
-    
-    /* 对于长SQL或包含特殊字符的SQL，使用临时文件 */
-    size_t sql_len = strlen(sql);
-    if (sql_len > 1000 || strchr(sql, '"') || strchr(sql, '\n')) {
-        const char *tmp_sql = "/tmp/db_sql.tmp";
-        FILE *fp = fopen(tmp_sql, "w");
-        if (!fp) {
-            printf("[DB] SQL执行失败: 无法创建临时文件\n");
-            return -1;
-        }
-        fputs(sql, fp);
-        fclose(fp);
-        
-        char cmd[512];
-        snprintf(cmd, sizeof(cmd), "sqlite3 '%s' < %s", g_db_path, tmp_sql);
-        ret = run_command(output, sizeof(output), "sh", "-c", cmd, NULL);
-        
-        unlink(tmp_sql);
-    } else {
-        char cmd[4096];
-        snprintf(cmd, sizeof(cmd), "sqlite3 '%s' \"%s\"", g_db_path, sql);
-        ret = run_command(output, sizeof(output), "sh", "-c", cmd, NULL);
-    }
-    
-    if (ret != 0) {
-        printf("[DB] SQL执行失败: %.200s...\n", sql);
+    char *err_msg = NULL;
+    int rc = sqlite3_exec(g_db, sql, NULL, 0, &err_msg);
+    if (rc != SQLITE_OK) {
+        printf("[DB] SQL执行失败: %s (SQL: %.100s)\n", err_msg, sql);
+        sqlite3_free(err_msg);
         return -1;
     }
     return 0;
@@ -163,201 +169,176 @@ int db_execute_safe(const char *sql) {
 }
 
 int db_query_int(const char *sql, int default_val) {
-    char cmd[1024];
-    char output[256] = {0};
-    
-    if (!sql || strlen(sql) == 0) {
-        return default_val;
-    }
-    
-    snprintf(cmd, sizeof(cmd), "sqlite3 '%s' \"%s\"", g_db_path, sql);
+    if (!g_db || !sql) return default_val;
     
     pthread_mutex_lock(&g_db_mutex);
-    int ret = run_command(output, sizeof(output), "sh", "-c", cmd, NULL);
-    pthread_mutex_unlock(&g_db_mutex);
-    
-    if (ret != 0 || strlen(output) == 0) {
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(g_db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        pthread_mutex_unlock(&g_db_mutex);
         return default_val;
     }
     
-    /* 去除换行符 */
-    size_t len = strlen(output);
-    if (len > 0 && output[len-1] == '\n') {
-        output[len-1] = '\0';
+    int result = default_val;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        result = sqlite3_column_int(stmt, 0);
     }
     
-    return atoi(output);
+    sqlite3_finalize(stmt);
+    pthread_mutex_unlock(&g_db_mutex);
+    return result;
 }
 
 int db_query_string(const char *sql, char *buf, size_t size) {
-    char cmd[1024];
-    
-    if (!sql || !buf || size == 0) {
-        return -1;
-    }
-    
-    buf[0] = '\0';
-    snprintf(cmd, sizeof(cmd), "sqlite3 '%s' \"%s\"", g_db_path, sql);
+    if (!g_db || !sql || !buf || size == 0) return -1;
     
     pthread_mutex_lock(&g_db_mutex);
-    int ret = run_command(buf, size, "sh", "-c", cmd, NULL);
-    pthread_mutex_unlock(&g_db_mutex);
-    
-    if (ret != 0) {
-        buf[0] = '\0';
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(g_db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        pthread_mutex_unlock(&g_db_mutex);
         return -1;
     }
     
-    /* 去除换行符 */
-    size_t len = strlen(buf);
-    if (len > 0 && buf[len-1] == '\n') {
-        buf[len-1] = '\0';
+    int ret = -1;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *text = sqlite3_column_text(stmt, 0);
+        if (text) {
+            strncpy(buf, (const char *)text, size - 1);
+            buf[size - 1] = '\0';
+            ret = 0;
+        }
     }
     
-    return 0;
+    sqlite3_finalize(stmt);
+    pthread_mutex_unlock(&g_db_mutex);
+    return ret;
 }
 
 int db_query_rows(const char *sql, const char *separator, char *buf, size_t size) {
-    char cmd[2048];
-    
-    if (!sql || !buf || size == 0) {
-        return -1;
-    }
-    
-    buf[0] = '\0';
-    
-    if (separator && strlen(separator) > 0) {
-        snprintf(cmd, sizeof(cmd), "sqlite3 -separator '%s' '%s' \"%s\"", 
-                 separator, g_db_path, sql);
-    } else {
-        snprintf(cmd, sizeof(cmd), "sqlite3 '%s' \"%s\"", g_db_path, sql);
-    }
+    if (!g_db || !sql || !buf || size == 0) return -1;
     
     pthread_mutex_lock(&g_db_mutex);
-    int ret = run_command(buf, size, "sh", "-c", cmd, NULL);
-    pthread_mutex_unlock(&g_db_mutex);
-    
-    if (ret != 0) {
-        buf[0] = '\0';
+    sqlite3_stmt *stmt;
+    int rc = sqlite3_prepare_v2(g_db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        pthread_mutex_unlock(&g_db_mutex);
         return -1;
     }
     
-    /* 去除末尾换行符 */
-    size_t len = strlen(buf);
-    if (len > 0 && buf[len-1] == '\n') {
-        buf[len-1] = '\0';
+    size_t offset = 0;
+    buf[0] = '\0';
+    const char *sep = separator ? separator : "|";
+    
+    while (sqlite3_step(stmt) == SQLITE_ROW && offset < size - 1) {
+        int cols = sqlite3_column_count(stmt);
+        for (int i = 0; i < cols; i++) {
+            const char *val = (const char *)sqlite3_column_text(stmt, i);
+            if (!val) val = "";
+            
+            size_t val_len = strlen(val);
+            if (offset + val_len + 2 >= size) break;
+            
+            strcpy(buf + offset, val);
+            offset += val_len;
+            
+            if (i < cols - 1) {
+                strcpy(buf + offset, sep);
+                offset += strlen(sep);
+            }
+        }
+        if (offset < size - 1) {
+            buf[offset++] = '\n';
+        }
     }
     
+    if (offset > 0 && buf[offset - 1] == '\n') {
+        buf[offset - 1] = '\0';
+    } else {
+        buf[offset] = '\0';
+    }
+    
+    sqlite3_finalize(stmt);
+    pthread_mutex_unlock(&g_db_mutex);
     return 0;
 }
-
 
 /*============================================================================
  * 字符串处理
  *============================================================================*/
 
 void db_escape_string(const char *src, char *dst, size_t size) {
-    if (!src || !dst || size == 0) {
-        if (dst && size > 0) dst[0] = '\0';
-        return;
+    if (!src || !dst || size == 0) return;
+    char *escaped = sqlite3_mprintf("%q", src);
+    if (escaped) {
+        strncpy(dst, escaped, size - 1);
+        dst[size - 1] = '\0';
+        sqlite3_free(escaped);
+    } else {
+        dst[0] = '\0';
     }
-    
-    size_t j = 0;
-    for (size_t i = 0; src[i] && j < size - 4; i++) {
-        switch (src[i]) {
-            case '\'':
-                dst[j++] = '\'';
-                dst[j++] = '\'';
-                break;
-            case '\n':
-                dst[j++] = '\\';
-                dst[j++] = 'n';
-                break;
-            case '\r':
-                dst[j++] = '\\';
-                dst[j++] = 'r';
-                break;
-            case '\\':
-                dst[j++] = '\\';
-                dst[j++] = '\\';
-                break;
-            default:
-                dst[j++] = src[i];
-                break;
-        }
-    }
-    dst[j] = '\0';
 }
 
 void db_unescape_string(char *str) {
-    if (!str) return;
-    
-    char *src = str;
-    char *dst = str;
-    
-    while (*src) {
-        if (*src == '\\' && *(src + 1)) {
-            src++;
-            switch (*src) {
-                case 'n': *dst++ = '\n'; break;
-                case 'r': *dst++ = '\r'; break;
-                case '\\': *dst++ = '\\'; break;
-                default: *dst++ = *src; break;
-            }
-            src++;
-        } else {
-            *dst++ = *src++;
-        }
-    }
-    *dst = '\0';
+    /* SQLite C API 返回的字符串不需要反转义，除非是自定义编码 */
+    // Placeholder - current system doesn't need it if we use C API properly
 }
 
 /*============================================================================
- * 配置管理
+ * 配置管理 (使用参数化查询)
  *============================================================================*/
 
 int config_get(const char *key, char *value, size_t value_size) {
-    char cmd[512];
-    
-    if (!key || !value || value_size == 0) {
-        return -1;
-    }
-    
-    value[0] = '\0';
-    snprintf(cmd, sizeof(cmd), 
-        "sqlite3 '%s' \"SELECT value FROM config WHERE key='%s';\"", 
-        g_db_path, key);
+    if (!g_db || !key || !value) return -1;
     
     pthread_mutex_lock(&g_db_mutex);
-    int ret = run_command(value, value_size, "sh", "-c", cmd, NULL);
-    pthread_mutex_unlock(&g_db_mutex);
+    sqlite3_stmt *stmt;
+    const char *sql = "SELECT value FROM config WHERE key = ?;";
     
-    if (ret != 0 || strlen(value) == 0) {
-        value[0] = '\0';
+    int rc = sqlite3_prepare_v2(g_db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        pthread_mutex_unlock(&g_db_mutex);
         return -1;
     }
     
-    /* 去除换行符 */
-    size_t len = strlen(value);
-    if (len > 0 && value[len-1] == '\n') {
-        value[len-1] = '\0';
+    sqlite3_bind_text(stmt, 1, key, -1, SQLITE_STATIC);
+    
+    int ret = -1;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *val = sqlite3_column_text(stmt, 0);
+        if (val) {
+            strncpy(value, (const char *)val, value_size - 1);
+            value[value_size - 1] = '\0';
+            ret = 0;
+        }
     }
     
-    return 0;
+    sqlite3_finalize(stmt);
+    pthread_mutex_unlock(&g_db_mutex);
+    return ret;
 }
 
 int config_set(const char *key, const char *value) {
-    char sql[1024];
+    if (!g_db || !key || !value) return -1;
     
-    if (!key || !value) {
+    pthread_mutex_lock(&g_db_mutex);
+    sqlite3_stmt *stmt;
+    const char *sql = "INSERT OR REPLACE INTO config (key, value) VALUES (?, ?);";
+    
+    int rc = sqlite3_prepare_v2(g_db, sql, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        pthread_mutex_unlock(&g_db_mutex);
         return -1;
     }
     
-    snprintf(sql, sizeof(sql),
-        "INSERT OR REPLACE INTO config (key, value) VALUES ('%s', '%s');",
-        key, value);
+    sqlite3_bind_text(stmt, 1, key, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, value, -1, SQLITE_STATIC);
     
-    return db_execute_safe(sql);
+    int ret = (sqlite3_step(stmt) == SQLITE_DONE) ? 0 : -1;
+    
+    sqlite3_finalize(stmt);
+    pthread_mutex_unlock(&g_db_mutex);
+    return ret;
 }
 
 int config_get_int(const char *key, int default_val) {
