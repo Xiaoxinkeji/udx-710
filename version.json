@@ -1,4 +1,4 @@
 {
-    "version": "4.0.1",
-    "changelog": "v4.0.1 Bug Fix: 修复了插件商店安装插件时因缺失 toast.info 函数导致的 'n is not a function' 错误，提升了前端稳定性。"
+    "version": "4.0.2",
+    "changelog": "v4.0.2 Hotfix: 修复了在线商店连接失败 (Failed to fetch) 的问题，优化了默认代理策略，确保在受限网络环境下也能正常获取插件列表。"
 }

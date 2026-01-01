@@ -30,9 +30,10 @@ const showStoreSettingsModal = ref(false)
 // 计算最终使用的 URL
 const finalStoreUrl = computed(() => {
   const url = customStoreUrl.value || DEFAULT_STORE_URL
-  // 如果不是 https 开头且不是相对路径，尝试添加代理
-  if (customProxyUrl.value && url.startsWith('https://raw.githubusercontent.com')) {
-    return customProxyUrl.value + url
+  // 如果是 GitHub raw 链接，自动添加代理
+  if (url.startsWith('https://raw.githubusercontent.com')) {
+    const proxy = customProxyUrl.value || DEFAULT_PROXY_URL
+    return proxy + url
   }
   return url
 })
