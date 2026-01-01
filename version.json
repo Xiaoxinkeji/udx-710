@@ -1,4 +1,4 @@
 {
     "version": "4.0.0",
-    "changelog": "v4.0.0 Milestone: 完成全系统安全加固，修复 auth 模块编译错误，标志着安全架构已全面进入成熟期。"
+    "changelog": "v4.0.0 Stable Release: 采用自适应安全数据库架构（Secure CLI Wrapper），修复了交叉编译环境缺失 sqlite3.h 的问题，实现全系统安全加固与零环境依赖构建。"
 }
