@@ -45,17 +45,26 @@ int run_command_v(char *output, size_t size, const char *cmd, va_list args) {
     close(pipefd[1]);
     size_t total = 0;
     ssize_t n;
-    while (total < size - 1 && (n = read(pipefd[0], output + total, size - 1 - total)) > 0) {
-        total += n;
+    
+    if (output && size > 0) {
+        while (total < size - 1 && (n = read(pipefd[0], output + total, size - 1 - total)) > 0) {
+            total += n;
+        }
+        output[total] = '\0';
+    } else {
+        /* Discard output */
+        char discard[256];
+        while (read(pipefd[0], discard, sizeof(discard)) > 0);
     }
-    output[total] = '\0';
     close(pipefd[0]);
 
     int status;
     waitpid(pid, &status, 0);
 
-    while (total > 0 && (output[total-1] == '\n' || output[total-1] == '\r' || output[total-1] == ' ')) {
-        output[--total] = '\0';
+    if (output && size > 0) {
+        while (total > 0 && (output[total-1] == '\n' || output[total-1] == '\r' || output[total-1] == ' ')) {
+            output[--total] = '\0';
+        }
     }
 
     return WIFEXITED(status) && WEXITSTATUS(status) == 0 ? 0 : -1;

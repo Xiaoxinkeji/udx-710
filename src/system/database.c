@@ -49,16 +49,7 @@ static void sql_escape(const char *src, char *dst, size_t dst_size) {
  */
 static int sqlite_cli_exec(const char *sql, char *output, size_t output_size) {
     if (!sql) return -1;
-    
-    /* 构造命令: sqlite3 <db_path> '<sql>' */
-    /* 注意：这里通过转义单引号并包裹在单引号内来防止 shell 注入 */
-    char escaped_sql[4096];
-    sql_escape(sql, escaped_sql, sizeof(escaped_sql));
-    
-    char cmd_sql[4096];
-    sql_escape(sql, cmd_sql, sizeof(cmd_sql));
-    
-    return run_command(output, output_size, "sqlite3", g_db_path, cmd_sql, NULL);
+    return run_command(output, output_size, "sqlite3", g_db_path, sql, NULL);
 }
 
 /**
