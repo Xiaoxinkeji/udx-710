@@ -1,7 +1,7 @@
 {
-    "version": "3.0.4",
+    "version": "3.0.5",
     "url": "https://github.com/Xiaoxinkeji/udx-710/releases/latest/download/udx710-uools-bundle.zip",
-    "changelog": "1. 修复 GLib-GObject-CRITICAL 断言（增加 G_IS_OBJECT 检查）\n2. 新增独立插件商城接口 /api/plugins/market/*\n3. 支持镜像源配置，解决下载失败/无法运行问题\n4. 插件下载后自动 SHA256 校验与解压安装",
+    "changelog": "1. [后端] 修复 plugin.c 潜在安全风险，增强 D-Bus 调用健壮性\n2. [前端] 引入 logger 工具类优化控制台输出\n3. [插件] 新增樱花飘落视觉效果、主题定制功能",
     "size": 10485760,
     "required": false
 }

@@ -60,7 +60,9 @@ int send_at(const char *cmd, char **result) {
     }
 
     if (error) g_error_free(error);
-    g_object_unref(conn);
+    if (conn && G_IS_OBJECT(conn)) {
+        g_object_unref(conn);
+    }
     return rc;
 }
 

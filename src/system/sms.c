@@ -473,7 +473,9 @@ void sms_deinit(void) {
     }
     
     if (g_sms_dbus_conn) {
+    if (g_sms_dbus_conn && G_IS_OBJECT(g_sms_dbus_conn)) {
         g_object_unref(g_sms_dbus_conn);
+    }
         g_sms_dbus_conn = NULL;
     }
     

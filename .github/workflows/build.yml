@@ -71,15 +71,15 @@ jobs:
         with:
           files: udx710-uools-bundle.zip
           body: |
-            ## 🚀 UDX710: 小新科技 v3.0.4 (Hotfix)
-
+            ## 🚀 UDX710: 小新科技 v3.0.5 (Maintenance)
+            
             ### 📝 更新日志 (Changelog)
-            - **GLib 断言**: 修复运行时 `(process:xxxx): GLib-GObject-CRITICAL **: g_object_unref: assertion 'G_IS_OBJECT (object)' failed` 警告
-            - **插件商城**: 新增独立 `/api/plugins/market/*` 接口，支持远程列表、镜像配置、SHA256 校验、自动解压安装
-            - **镜像源**: 支持自定义镜像地址，解决 GitHub 访问失败导致的插件下载/运行问题
-
-            ### 🐛 问题修复 (Fixed)
-            - **下载失败**: 插件商城因网络/跨域无法下载、安装后无法运行
+            - **后端安全**: 修复 `plugin.c` 中的格式字符串隐患，增强所有 D-Bus 对象生命周期检查
+            - **日志性能**: 引入 `logger` 工具类，显著减少生产环境控制台冗余输出
+            - **新插件加入**:
+              - **樱花飘落**: 面板唯美动态效果 (高性能 CSS 版)
+              - **主题定制**: 自定义背景图、全局配色及透明度
+            - **问题修复**: 修正看板插件作者名称拼写错误
 
             ---
             *注：适用于 UDX710 平台所有通用设备。默认端口：9898。*

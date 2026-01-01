@@ -5,6 +5,7 @@ import { PluginCard, PluginStatus, PluginBtn } from './plugin'
 import { useToast } from '../composables/useToast'
 import { useConfirm } from '../composables/useConfirm'
 import { getPluginList, uploadPlugin, deletePlugin, deleteAllPlugins, executeShell, getScriptList, uploadScript, updateScript, deleteScript, getPluginStorage, setPluginStorage, deletePluginStorage } from '../composables/useApi'
+import { logger } from '../utils/logger'
 
 const { t } = useI18n()
 const { success, error, info } = useToast()
@@ -589,7 +590,7 @@ const pluginAPI = {
         }
         return defaultValue
       } catch (e) {
-        console.error('Storage get error:', e)
+        logger.error('Storage get error:', e)
         return defaultValue
       }
     },
@@ -927,7 +928,7 @@ function closePluginModal() {
       }
       currentPluginDef.destroyed.call(destroyedContext)
     } catch (e) {
-      console.error('Plugin destroyed hook error:', e)
+      logger.error('Plugin destroyed hook error:', e)
     }
   }
   

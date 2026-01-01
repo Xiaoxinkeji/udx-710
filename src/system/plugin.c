@@ -251,7 +251,7 @@ int save_plugin(const char *name, const char *content) {
     FILE *fp = fopen(filename, "w");
     if (!fp) return -1;
 
-    fprintf(fp, "%s", content);
+    fputs(content, fp);
     fclose(fp);
 
     return 0;

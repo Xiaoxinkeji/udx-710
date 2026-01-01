@@ -21,9 +21,27 @@
     "id": "ufi_dashboard",
     "name": "UFI 数据看板",
     "version": "1.0.0",
-    "author": "小心科技",
+    "author": "小新科技",
     "description": "沉浸式全屏数据监控看板，展示信号、流量、硬件温度等详细信息。",
     "url": "https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/ufi_dashboard.js",
     "icon": "fa-desktop"
+  },
+  {
+    "id": "sakura_effect",
+    "name": "樱花飘落",
+    "version": "1.0.0",
+    "author": "小新科技",
+    "description": "为你的面板添加唯美的樱花飘落视觉效果，高性能CSS实现。",
+    "url": "https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/sakura_effect.js",
+    "icon": "fa-snowflake"
+  },
+  {
+    "id": "theme_customizer",
+    "name": "主题定制",
+    "version": "1.0.0",
+    "author": "小新科技",
+    "description": "自定义你的软件背景、主色调和元素透明度。让它独一无二。",
+    "url": "https://raw.githubusercontent.com/Xiaoxinkeji/udx-710/main/js/theme_customizer.js",
+    "icon": "fa-palette"
   }
 ]
