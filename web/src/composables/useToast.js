@@ -12,6 +12,7 @@ export function useToast() {
 
   function success(message, duration) { showToast(true, message, duration) }
   function error(message, duration) { showToast(false, message, duration) }
+  function info(message, duration) { showToast(true, message, duration) } // Use success state for now
 
-  return { toast, showToast, success, error }
+  return { toast, showToast, success, error, info }
 }

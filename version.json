@@ -1,4 +1,4 @@
 {
-    "version": "4.0.0",
-    "changelog": "v4.0.0 Stable Release: 采用自适应安全数据库架构（Secure CLI Wrapper），修复了交叉编译环境缺失 sqlite3.h 的问题，实现全系统安全加固与零环境依赖构建。"
+    "version": "4.0.1",
+    "changelog": "v4.0.1 Bug Fix: 修复了插件商店安装插件时因缺失 toast.info 函数导致的 'n is not a function' 错误，提升了前端稳定性。"
 }
