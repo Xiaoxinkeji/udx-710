@@ -55,10 +55,10 @@ static int sqlite_cli_exec(const char *sql, char *output, size_t output_size) {
     char escaped_sql[4096];
     sql_escape(sql, escaped_sql, sizeof(escaped_sql));
     
-    char cmd[5120];
-    snprintf(cmd, sizeof(cmd), "sqlite3 %s '%s'", g_db_path, escaped_sql);
+    char cmd_sql[4096];
+    sql_escape(sql, cmd_sql, sizeof(cmd_sql));
     
-    return run_command(output, output_size, "%s", cmd);
+    return run_command(output, output_size, "sqlite3", g_db_path, cmd_sql, NULL);
 }
 
 /**
