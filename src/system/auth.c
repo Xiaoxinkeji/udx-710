@@ -12,6 +12,8 @@
 #include "auth.h"
 #include "sha256.h"
 #include "database.h"
+#include <sqlite3.h>
+#include <pthread.h>
 
 /* 外部函数 - 执行命令 */
 extern int run_command(char *output, size_t output_size, const char *cmd, ...);
@@ -197,13 +199,13 @@ int auth_verify_token(const char *token)
     
     /* 使用参数化查询防止 SQL 注入 */
     sqlite3_stmt *stmt;
-    const char *sql = "SELECT COUNT(*) FROM auth_tokens WHERE token = ? AND expire_time > ?;";
+    const char *sql_query = "SELECT COUNT(*) FROM auth_tokens WHERE token = ? AND expire_time > ?;";
     
     extern sqlite3 *g_db; /* 从 database.c 引用 */
     extern pthread_mutex_t g_db_mutex;
 
     pthread_mutex_lock(&g_db_mutex);
-    int rc = sqlite3_prepare_v2(g_db, sql, -1, &stmt, NULL);
+    int rc = sqlite3_prepare_v2(g_db, sql_query, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         pthread_mutex_unlock(&g_db_mutex);
         return -1;
@@ -278,13 +280,13 @@ int auth_logout(const char *token)
     
     /* 使用参数化查询防止 SQL 注入 */
     sqlite3_stmt *stmt;
-    const char *sql = "DELETE FROM auth_tokens WHERE token = ?;";
+    const char *sql_query = "DELETE FROM auth_tokens WHERE token = ?;";
     
     extern sqlite3 *g_db;
     extern pthread_mutex_t g_db_mutex;
 
     pthread_mutex_lock(&g_db_mutex);
-    int rc = sqlite3_prepare_v2(g_db, sql, -1, &stmt, NULL);
+    int rc = sqlite3_prepare_v2(g_db, sql_query, -1, &stmt, NULL);
     if (rc != SQLITE_OK) {
         pthread_mutex_unlock(&g_db_mutex);
         return -1;
