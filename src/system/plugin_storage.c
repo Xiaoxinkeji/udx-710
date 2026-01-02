@@ -42,9 +42,9 @@ int ensure_plugin_data_dir(void) {
     struct stat st = {0};
     if (stat(PLUGIN_DATA_DIR, &st) == -1) {
         /* 递归创建目录 */
-        char cmd[512];
-        snprintf(cmd, sizeof(cmd), "mkdir -p %s", PLUGIN_DATA_DIR);
-        if (system(cmd) != 0) {
+        extern int run_command(char *output, size_t size, const char *cmd, ...);
+        char output[256];
+        if (run_command(output, sizeof(output), "mkdir", "-p", PLUGIN_DATA_DIR, NULL) != 0) {
             return -1;
         }
     }

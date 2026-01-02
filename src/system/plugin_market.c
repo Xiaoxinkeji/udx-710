@@ -36,13 +36,15 @@ static const char *get_mirror(void) {
 
 /* 下载文件到指定路径，优先 curl，失败用 wget */
 static int download_file(const char *url, const char *dest_path) {
-    char cmd[1024];
+    extern int run_command(char *output, size_t size, const char *cmd, ...);
+    char output[256];
+
     /* 尝试 curl */
-    snprintf(cmd, sizeof(cmd), "curl -k -s -L -o %s %s", dest_path, url);
-    if (system(cmd) == 0) return 0;
+    if (run_command(output, sizeof(output), "curl", "-k", "-s", "-L", "-o", dest_path, url, NULL) == 0) {
+        return 0;
+    }
     /* 尝试 wget */
-    snprintf(cmd, sizeof(cmd), "wget --no-check-certificate -q -O %s %s", dest_path, url);
-    return system(cmd) == 0 ? 0 : -1;
+    return run_command(output, sizeof(output), "wget", "--no-check-certificate", "-q", "-O", dest_path, url, NULL);
 }
 
 /* 拉取远程插件列表，输出到 json_buffer */
@@ -104,22 +106,23 @@ int plugin_market_install(const char *plugin_name, const char *expected_sha256) 
     }
 
     /* 解压到临时目录 */
-    system("rm -rf " MARKET_TMP_DIR);
+    extern int run_command(char *output, size_t size, const char *cmd, ...);
+    char output[256];
+    run_command(output, sizeof(output), "rm", "-rf", MARKET_TMP_DIR, NULL);
     mkdir(MARKET_TMP_DIR, 0755);
-    char unzip_cmd[1024];
-    snprintf(unzip_cmd, sizeof(unzip_cmd), "unzip -q -d %s %s", MARKET_TMP_DIR, MARKET_TMP_ZIP);
-    if (system(unzip_cmd) != 0) {
+
+    if (run_command(output, sizeof(output), "unzip", "-q", "-d", MARKET_TMP_DIR, MARKET_TMP_ZIP, NULL) != 0) {
         unlink(MARKET_TMP_ZIP);
         return -4;
     }
 
     /* 移动 *.js 到插件目录 */
-    char mv_cmd[1024];
-    snprintf(mv_cmd, sizeof(mv_cmd), "mv %s/*.js \"%s\"", MARKET_TMP_DIR, PLUGIN_DIR);
-    int ret = system(mv_cmd) == 0 ? 0 : -5;
+    char shell_cmd[512];
+    snprintf(shell_cmd, sizeof(shell_cmd), "mv %s/*.js \"%s\"", MARKET_TMP_DIR, PLUGIN_DIR);
+    int ret = run_command(output, sizeof(output), "sh", "-c", shell_cmd, NULL) == 0 ? 0 : -5;
 
     /* 清理 */
-    system("rm -rf " MARKET_TMP_DIR);
+    run_command(output, sizeof(output), "rm", "-rf", MARKET_TMP_DIR, NULL);
     unlink(MARKET_TMP_ZIP);
     return ret;
 }

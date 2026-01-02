@@ -42,9 +42,9 @@ int ensure_plugin_dir(void) {
     if (stat(PLUGIN_DIR, &st) == -1) {
         if (mkdir(PLUGIN_DIR, 0755) == -1) {
             /* 尝试递归创建 */
-            char cmd[512];
-            snprintf(cmd, sizeof(cmd), "mkdir -p %s", PLUGIN_DIR);
-            return system(cmd) == 0 ? 0 : -1;
+            extern int run_command(char *output, size_t size, const char *cmd, ...);
+            char output[256];
+            return run_command(output, sizeof(output), "mkdir", "-p", PLUGIN_DIR, NULL) == 0 ? 0 : -1;
         }
     }
     return 0;

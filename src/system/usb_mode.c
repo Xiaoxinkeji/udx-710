@@ -233,7 +233,9 @@ static int read_sysfs(const char *path, char *buf, size_t size) {
 /* 执行系统命令 */
 static int run_cmd(const char *cmd) {
     printf("[usb_mode] 执行: %s\n", cmd);
-    return system(cmd);
+    extern int run_command(char *output, size_t size, const char *cmd, ...);
+    char output[256];
+    return run_command(output, sizeof(output), "sh", "-c", cmd, NULL);
 }
 
 /* 停止 adbd 服务 */

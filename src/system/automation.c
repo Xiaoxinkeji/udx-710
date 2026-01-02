@@ -79,19 +79,25 @@ void automation_check_cycle(void) {
             
             if (strcmp(rules[i].action, "reboot") == 0) {
                 printf("[AUTO] 执行动作: 重启设备\n");
-                system("reboot &");
+                extern void device_reboot(void);
+                device_reboot();
             } else if (g_str_has_prefix(rules[i].action, "shell:")) {
                 const char *cmd = rules[i].action + 6;
                 char act_msg[256];
                 snprintf(act_msg, sizeof(act_msg), "[AUTO] 执行自定义命令: %s", cmd);
                 printf("%s\n", act_msg);
-                system(cmd);
+                extern int run_command(char *output, size_t size, const char *cmd, ...);
+                char output[1024];
+                run_command(output, sizeof(output), "sh", "-c", cmd, NULL);
             } else if (strcmp(rules[i].action, "drop_caches") == 0) {
                 printf("[AUTO] 执行动作: 释放系统缓存\n");
-                system("echo 3 > /proc/sys/vm/drop_caches");
+                extern int clear_cache(void);
+                clear_cache();
             } else if (strcmp(rules[i].action, "compact_memory") == 0) {
                 printf("[AUTO] 执行动作: 整理内存碎片\n");
-                system("echo 1 > /proc/sys/vm/compact_memory");
+                extern int run_command(char *output, size_t size, const char *cmd, ...);
+                char output[256];
+                run_command(output, sizeof(output), "sh", "-c", "echo 1 > /proc/sys/vm/compact_memory", NULL);
             }
         }
     }

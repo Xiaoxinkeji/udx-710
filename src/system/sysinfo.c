@@ -446,10 +446,12 @@ void system_optimize_memory(void) {
     printf("[MEM] 正在应用系统级别内存优化...\n");
 
     /* 1. VM 调优 */
-    system("echo 200 > /proc/sys/vm/vfs_cache_pressure");
-    system("echo 10 > /proc/sys/vm/swappiness");
-    system("echo 10 > /proc/sys/vm/dirty_ratio");
-    system("echo 20 > /proc/sys/vm/dirty_background_ratio");
+    extern int run_command(char *output, size_t size, const char *cmd, ...);
+    char output[256];
+    run_command(output, sizeof(output), "sh", "-c", "echo 200 > /proc/sys/vm/vfs_cache_pressure", NULL);
+    run_command(output, sizeof(output), "sh", "-c", "echo 10 > /proc/sys/vm/swappiness", NULL);
+    run_command(output, sizeof(output), "sh", "-c", "echo 10 > /proc/sys/vm/dirty_ratio", NULL);
+    run_command(output, sizeof(output), "sh", "-c", "echo 20 > /proc/sys/vm/dirty_background_ratio", NULL);
 
     /* 2. OOM 评分保护 (保护当前进程) */
     char oom_path[64];
@@ -462,6 +464,7 @@ void system_optimize_memory(void) {
     }
 
     /* 3. 初始强制回收一次 */
-    system("echo 3 > /proc/sys/vm/drop_caches");
+    extern int clear_cache(void);
+    clear_cache();
     printf("[MEM] 系统内存优化应用完成\n");
 }

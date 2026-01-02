@@ -1518,14 +1518,16 @@ void handle_script_list(struct mg_connection *c, struct mg_http_message *hm) {
         return;
     }
 
-    strcpy(json, "[");
+    json[0] = '[';
+    json[1] = '\0';
+    size_t json_len = 1;
     int first = 1;
     int count = 0;
 
     /* 确保目录存在 */
-    char mkdir_cmd[512];
-    snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", SCRIPTS_DIR);
-    system(mkdir_cmd);
+    extern int run_command(char *output, size_t size, const char *cmd, ...);
+    char output[256];
+    run_command(output, sizeof(output), "mkdir", "-p", SCRIPTS_DIR, NULL);
 
     DIR *dir = opendir(SCRIPTS_DIR);
     if (dir) {
@@ -1561,19 +1563,29 @@ void handle_script_list(struct mg_connection *c, struct mg_http_message *hm) {
                     escaped[j] = '\0';
 
                     char item[70000];
-                    snprintf(item, sizeof(item),
+                    int item_len = snprintf(item, sizeof(item),
                         "%s{\"name\":\"%s\",\"size\":%ld,\"mtime\":%ld,\"content\":\"%s\"}",
                         first ? "" : ",", entry->d_name, st.st_size, st.st_mtime, escaped);
-                    strcat(json, item);
-                    first = 0;
-                    count++;
+
+                    /* 安全拼接：检查缓冲区空间 */
+                    if (json_len + item_len < 256 * 1024 - 10) {
+                        memcpy(json + json_len, item, item_len);
+                        json_len += item_len;
+                        json[json_len] = '\0';
+                        first = 0;
+                        count++;
+                    }
                 }
             }
         }
         closedir(dir);
     }
 
-    strcat(json, "]");
+    /* 安全拼接结束符 */
+    if (json_len < 256 * 1024 - 2) {
+        json[json_len++] = ']';
+        json[json_len] = '\0';
+    }
 
     char response[256 * 1024 + 128];
     snprintf(response, sizeof(response),

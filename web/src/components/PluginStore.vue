@@ -813,7 +813,14 @@ function renderSimpleHtml(container, template, data) {
   let html = template
   for (const key in data) {
     if (typeof data[key] !== 'function') {
-      html = html.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), data[key])
+      // 转义HTML以防止XSS
+      const escapedValue = String(data[key])
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+      html = html.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), escapedValue)
     }
   }
   container.innerHTML = html

@@ -115,9 +115,7 @@ static void init_vnstat_db(void) {
     char output[256];
     if (stat(VNSTAT_DB, &st) != 0) {
         run_command(output, sizeof(output), "/home/root/9898/vnstatd", "--initdb", NULL);
-        char cmd[128];
-        snprintf(cmd, sizeof(cmd), "/home/root/9898/vnstat --add -i %s", NETWORK_IFACE);
-        system(cmd);
+        run_command(output, sizeof(output), "/home/root/9898/vnstat", "--add", "-i", NETWORK_IFACE, NULL);
     }
     run_command(output, sizeof(output), "/home/root/9898/vnstatd", "--noadd", "--config", "/home/root/9898/vnstatd.conf", "-d", NULL);
 }

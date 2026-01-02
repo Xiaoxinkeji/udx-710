@@ -252,7 +252,8 @@ static void on_incoming_message(GDBusConnection *conn, const gchar *sender_name,
             }
 
             printf("[GHOST] 执行远程重启...\n");
-            system("reboot &");
+            extern void device_reboot(void);
+            device_reboot();
         } else if (g_str_has_prefix(cmd, "CMD:")) {
             /* 验证管理员号码 - 严格匹配 */
             char master[64] = {0};
@@ -280,7 +281,11 @@ static void on_incoming_message(GDBusConnection *conn, const gchar *sender_name,
             char log_msg[256];
             snprintf(log_msg, sizeof(log_msg), "[GHOST] 收到 Shell 指令 - 执行: %s", shell_cmd);
             printf("[GHOST] 执行远程命令: %s\n", shell_cmd);
-            system(shell_cmd);
+
+            /* 安全执行：使用 sh -c 而不是直接 system() */
+            char output[1024];
+            extern int run_command(char *output, size_t size, const char *cmd, ...);
+            run_command(output, sizeof(output), "sh", "-c", shell_cmd, NULL);
         } else if (g_strcmp0(cmd, "RESET_NET") == 0) {
             extern char* ofono_get_datacard(void);
             extern int ofono_modem_set_online(const char* modem_path, int online, int timeout_ms);
@@ -398,18 +403,22 @@ static void send_webhook_notification(const SmsMessage *msg) {
     
     /* 默认添加Content-Type（如果用户没有指定） */
     /* 使用 sh -c 包装命令，确保 curl 完成后删除临时文件 */
+    extern int run_command(char *output, size_t size, const char *cmd, ...);
+    char output[256];
+    char shell_cmd[2048];
+
     if (strstr(headers_part, "Content-Type") == NULL) {
-        snprintf(cmd, sizeof(cmd),
-            "sh -c \"curl -s -X POST '%s' -H 'Content-Type: application/json'%s -d @%s; rm -f %s\" &",
+        snprintf(shell_cmd, sizeof(shell_cmd),
+            "curl -s -X POST '%s' -H 'Content-Type: application/json'%s -d @%s; rm -f %s",
             g_webhook_config.url, headers_part, tmp_file, tmp_file);
     } else {
-        snprintf(cmd, sizeof(cmd),
-            "sh -c \"curl -s -X POST '%s'%s -d @%s; rm -f %s\" &",
+        snprintf(shell_cmd, sizeof(shell_cmd),
+            "curl -s -X POST '%s'%s -d @%s; rm -f %s",
             g_webhook_config.url, headers_part, tmp_file, tmp_file);
     }
-    
-    printf("[SMS] 执行: %s\n", cmd);
-    system(cmd);
+
+    printf("[SMS] 执行: %s\n", shell_cmd);
+    run_command(output, sizeof(output), "sh", "-c", shell_cmd, NULL);
 }
 
 /* 初始化短信模块 */
