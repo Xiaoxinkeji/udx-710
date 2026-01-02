@@ -120,25 +120,19 @@ static int extract_plugin_meta(const char *content, char *name, char *version,
     strcpy(color, "from-blue-500 to-cyan-400");
 
     /* 首先尝试解析 JSDoc 风格的注释 (@name, @version 等) */
-    const char *jsdoc_patterns[][2] = {
-        {"@name ", name},
-        {"@version ", version},
-        {"@author ", author},
-        {"@description ", description},
-        {"@icon ", icon},
-        {"@color ", color}
-    };
+    const char *jsdoc_tags[] = {"@name ", "@version ", "@author ", "@description ", "@icon ", "@color "};
+    char *jsdoc_dests[] = {name, version, author, description, icon, color};
 
     int found_jsdoc = 0;
     for (int i = 0; i < 6; i++) {
-        const char *p = strstr(content, jsdoc_patterns[i][0]);
+        const char *p = strstr(content, jsdoc_tags[i]);
         if (p) {
             found_jsdoc = 1;
-            p += strlen(jsdoc_patterns[i][0]);
+            p += strlen(jsdoc_tags[i]);
             /* 跳过空白字符 */
             while (*p == ' ' || *p == '\t') p++;
 
-            char *dst = (char *)jsdoc_patterns[i][1];
+            char *dst = jsdoc_dests[i];
             int j = 0;
             /* 提取到行尾或 */ 为止 */
             while (*p && *p != '\n' && *p != '\r' && j < 127) {
@@ -169,24 +163,18 @@ static int extract_plugin_meta(const char *content, char *name, char *version,
     }
 
     /* 简单解析 name: 'xxx' 或 name: "xxx" */
-    const char *patterns[][2] = {
-        {"name:", name},
-        {"version:", version},
-        {"author:", author},
-        {"description:", description},
-        {"icon:", icon},
-        {"color:", color}
-    };
+    const char *obj_tags[] = {"name:", "version:", "author:", "description:", "icon:", "color:"};
+    char *obj_dests[] = {name, version, author, description, icon, color};
 
     for (int i = 0; i < 6; i++) {
-        const char *p = strstr(plugin_start, patterns[i][0]);
+        const char *p = strstr(plugin_start, obj_tags[i]);
         if (p) {
-            p += strlen(patterns[i][0]);
+            p += strlen(obj_tags[i]);
             /* 跳过空白字符（包括空格、制表符、换行符） */
             while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
             if (*p == '\'' || *p == '"') {
                 char quote = *p++;
-                char *dst = (char *)patterns[i][1];
+                char *dst = obj_dests[i];
                 int j = 0;
                 /* 提取值，支持转义字符 */
                 while (*p && *p != quote && j < 127) {
