@@ -179,7 +179,10 @@ import {
   faSearch,
 
   // ApnConfig.vue 运营商图标
-  faMobileAlt
+  faMobileAlt,
+
+  // AutomationManager.vue 自动化流图标
+  faRobot
 } from '@fortawesome/free-solid-svg-icons'
 
 // 注册所有图标到库
@@ -313,7 +316,8 @@ library.add(
   faFolder,
   faDatabase,
   faSearch,
-  faMobileAlt
+  faMobileAlt,
+  faRobot
 )
 
 // 启用 DOM 监视器，自动将 <i class="fas fa-xxx"> 转换为 SVG
