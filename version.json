@@ -1,4 +1,4 @@
 {
-    "version": "4.0.2",
-    "changelog": "v4.0.2 Hotfix: 修复了在线商店连接失败 (Failed to fetch) 的问题，优化了默认代理策略，确保在受限网络环境下也能正常获取插件列表。"
+    "version": "4.0.3",
+    "changelog": "v4.0.3 Security Update: 全面安全加固，修复命令注入、缓冲区溢出和XSS漏洞。替换所有不安全的system()调用为安全的run_command()，增强输入验证和边界检查。"
 }
