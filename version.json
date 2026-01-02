@@ -1,4 +1,4 @@
 {
-    "version": "4.0.3",
-    "changelog": "v4.0.3 Security Update: 全面安全加固，修复命令注入、缓冲区溢出和XSS漏洞。替换所有不安全的system()调用为安全的run_command()，增强输入验证和边界检查。"
+    "version": "4.1.0",
+    "changelog": "v4.1.0 Major Update: 全面安全加固 + UI 优化。修复命令注入、缓冲区溢出、XSS漏洞；优化插件商店代理；修复自动化流图标显示；增强系统安全性。"
 }
