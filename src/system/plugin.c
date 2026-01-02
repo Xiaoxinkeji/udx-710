@@ -119,7 +119,45 @@ static int extract_plugin_meta(const char *content, char *name, char *version,
     strcpy(icon, "fa-puzzle-piece");
     strcpy(color, "from-blue-500 to-cyan-400");
 
-    /* 查找 window.PLUGIN = { 或 PLUGIN = { 的位置 */
+    /* 首先尝试解析 JSDoc 风格的注释 (@name, @version 等) */
+    const char *jsdoc_patterns[][2] = {
+        {"@name ", name},
+        {"@version ", version},
+        {"@author ", author},
+        {"@description ", description},
+        {"@icon ", icon},
+        {"@color ", color}
+    };
+
+    int found_jsdoc = 0;
+    for (int i = 0; i < 6; i++) {
+        const char *p = strstr(content, jsdoc_patterns[i][0]);
+        if (p) {
+            found_jsdoc = 1;
+            p += strlen(jsdoc_patterns[i][0]);
+            /* 跳过空白字符 */
+            while (*p == ' ' || *p == '\t') p++;
+
+            char *dst = (char *)jsdoc_patterns[i][1];
+            int j = 0;
+            /* 提取到行尾或 */ 为止 */
+            while (*p && *p != '\n' && *p != '\r' && j < 127) {
+                /* 如果遇到注释结束符，停止 */
+                if (*p == '*' && *(p+1) == '/') break;
+                dst[j++] = *p++;
+            }
+            /* 去除尾部空白 */
+            while (j > 0 && (dst[j-1] == ' ' || dst[j-1] == '\t')) j--;
+            dst[j] = '\0';
+        }
+    }
+
+    /* 如果找到了 JSDoc 注释，直接返回 */
+    if (found_jsdoc) {
+        return 0;
+    }
+
+    /* 否则尝试解析 window.PLUGIN 对象内的元数据 */
     const char *plugin_start = strstr(content, "window.PLUGIN");
     if (!plugin_start) {
         plugin_start = strstr(content, "PLUGIN");
