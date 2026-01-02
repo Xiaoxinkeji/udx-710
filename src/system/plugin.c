@@ -109,7 +109,7 @@ static void json_escape(const char *src, char *dst, size_t dst_size) {
 }
 
 /* 从插件内容中提取元信息 */
-static int extract_plugin_meta(const char *content, char *name, char *version, 
+static int extract_plugin_meta(const char *content, char *name, char *version,
                                 char *author, char *description, char *icon, char *color) {
     /* 默认值 */
     strcpy(name, "未命名插件");
@@ -118,6 +118,17 @@ static int extract_plugin_meta(const char *content, char *name, char *version,
     strcpy(description, "");
     strcpy(icon, "fa-puzzle-piece");
     strcpy(color, "from-blue-500 to-cyan-400");
+
+    /* 查找 window.PLUGIN = { 或 PLUGIN = { 的位置 */
+    const char *plugin_start = strstr(content, "window.PLUGIN");
+    if (!plugin_start) {
+        plugin_start = strstr(content, "PLUGIN");
+    }
+
+    /* 如果找不到PLUGIN定义，使用整个内容 */
+    if (!plugin_start) {
+        plugin_start = content;
+    }
 
     /* 简单解析 name: 'xxx' 或 name: "xxx" */
     const char *patterns[][2] = {
@@ -130,16 +141,30 @@ static int extract_plugin_meta(const char *content, char *name, char *version,
     };
 
     for (int i = 0; i < 6; i++) {
-        const char *p = strstr(content, patterns[i][0]);
+        const char *p = strstr(plugin_start, patterns[i][0]);
         if (p) {
             p += strlen(patterns[i][0]);
-            while (*p == ' ' || *p == '\t') p++;
+            /* 跳过空白字符（包括空格、制表符、换行符） */
+            while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
             if (*p == '\'' || *p == '"') {
                 char quote = *p++;
                 char *dst = (char *)patterns[i][1];
                 int j = 0;
+                /* 提取值，支持转义字符 */
                 while (*p && *p != quote && j < 127) {
-                    dst[j++] = *p++;
+                    if (*p == '\\' && *(p+1)) {
+                        /* 处理转义字符 */
+                        p++;
+                        if (*p == 'n') dst[j++] = '\n';
+                        else if (*p == 't') dst[j++] = '\t';
+                        else if (*p == 'r') dst[j++] = '\r';
+                        else if (*p == '\\') dst[j++] = '\\';
+                        else if (*p == '\'' || *p == '"') dst[j++] = *p;
+                        else dst[j++] = *p;
+                        p++;
+                    } else {
+                        dst[j++] = *p++;
+                    }
                 }
                 dst[j] = '\0';
             }
